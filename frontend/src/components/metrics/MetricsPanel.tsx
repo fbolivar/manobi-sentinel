@@ -45,65 +45,76 @@ export function MetricsPanel() {
     .slice(0, 5);
 
   function probColor(p: number) {
-    if (p >= 70) return 'text-accent-red';
-    if (p >= 40) return 'text-accent-amber';
-    return 'text-accent-green';
+    if (p >= 70) return 'text-red-600';
+    if (p >= 40) return 'text-amber-600';
+    return 'text-green-700';
+  }
+  function barColor(p: number) {
+    if (p >= 70) return 'bg-red-500';
+    if (p >= 40) return 'bg-amber-500';
+    return 'bg-green-500';
   }
 
   return (
     <aside className="panel flex flex-col overflow-hidden">
       <div className="px-4 py-3 border-b border-border-subtle">
-        <h2 className="text-sm font-bold tracking-wider">MÉTRICAS EN TIEMPO REAL</h2>
+        <h2 className="text-sm font-semibold text-txt tracking-wide">Métricas en tiempo real</h2>
       </div>
       <div className="p-4 space-y-4 overflow-y-auto">
+        {/* Contadores por nivel */}
         <div className="grid grid-cols-3 gap-2">
           {(['rojo', 'amarillo', 'verde'] as const).map((n) => (
-            <div key={n} className={`rounded border p-3 text-center ${
-              n === 'rojo' ? 'border-accent-red/40 bg-accent-red/5'
-              : n === 'amarillo' ? 'border-accent-amber/40 bg-accent-amber/5'
-              : 'border-accent-green/40 bg-accent-green/5'
+            <div key={n} className={`rounded-lg border p-3 text-center ${
+              n === 'rojo' ? 'border-red-200 bg-red-50'
+              : n === 'amarillo' ? 'border-amber-200 bg-amber-50'
+              : 'border-green-200 bg-green-50'
             }`}>
               <div className={`stat-number text-2xl ${
-                n === 'rojo' ? 'text-accent-red' : n === 'amarillo' ? 'text-accent-amber' : 'text-accent-green'
+                n === 'rojo' ? 'text-red-600' : n === 'amarillo' ? 'text-amber-600' : 'text-green-600'
               }`}>{count(n)}</div>
-              <div className="text-[10px] font-mono uppercase text-white/50">{n}</div>
+              <div className={`text-[10px] font-semibold uppercase ${
+                n === 'rojo' ? 'text-red-400' : n === 'amarillo' ? 'text-amber-400' : 'text-green-400'
+              }`}>{n}</div>
             </div>
           ))}
         </div>
 
+        {/* Top parques */}
         <div>
-          <div className="text-[10px] font-mono text-white/50 mb-2">TOP PARQUES — ÚLTIMAS 50 ALERTAS</div>
-          <div className="space-y-1">
-            {top5.length === 0 && <div className="text-xs text-white/30">Sin datos aún</div>}
+          <div className="text-xs font-semibold text-txt-muted uppercase tracking-wider mb-2">Top parques</div>
+          <div className="space-y-0.5">
+            {top5.length === 0 && <div className="text-xs text-txt-light">Sin datos aún</div>}
             {top5.map(([nombre, total]) => (
-              <div key={nombre} className="flex items-center justify-between text-xs py-1 border-b border-border-subtle/50">
-                <span className="truncate">{nombre}</span>
-                <span className="font-mono text-accent-blue">{total}</span>
+              <div key={nombre} className="flex items-center justify-between text-xs py-1.5 border-b border-border-subtle">
+                <span className="truncate text-txt">{nombre}</span>
+                <span className="font-mono font-bold text-pnn-blue ml-2">{total}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="panel p-3 bg-accent-blue/5 border-accent-blue/30">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-[10px] font-mono text-accent-blue">IA · PREDICCIONES</div>
+        {/* Predicciones IA */}
+        <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-xs font-bold text-pnn-blue uppercase tracking-wider">IA · Predicciones</div>
             {topPreds[0] && (
-              <div className="text-[9px] font-mono text-white/40">{topPreds[0].modelo_version}</div>
+              <span className="text-[10px] text-txt-light bg-white px-1.5 py-0.5 rounded">{topPreds[0].modelo_version}</span>
             )}
           </div>
           {topPreds.length === 0 && (
-            <div className="text-xs text-white/40">Esperando primer ciclo del motor (cada 15 min)…</div>
+            <div className="text-xs text-txt-muted">Esperando primer ciclo…</div>
           )}
-          <div className="space-y-1.5">
+          <div className="space-y-2.5">
             {topPreds.map((p) => (
-              <div key={p.id} className="flex items-center justify-between text-xs">
-                <span className="font-mono uppercase text-white/60 w-20">{p.tipo}</span>
-                <div className="flex-1 mx-2 h-1.5 bg-bg-surface2 rounded overflow-hidden">
-                  <div className={`h-full ${
-                    p.prob >= 70 ? 'bg-accent-red' : p.prob >= 40 ? 'bg-accent-amber' : 'bg-accent-green'
-                  }`} style={{ width: `${Math.min(p.prob, 100)}%` }} />
+              <div key={p.id} className="flex items-center gap-2">
+                <span className="text-[11px] font-bold uppercase text-txt w-[72px] shrink-0">{p.tipo}</span>
+                <div className="flex-1 h-2.5 bg-white rounded-full overflow-hidden border border-gray-200">
+                  <div className={`h-full rounded-full transition-all ${barColor(p.prob)}`}
+                    style={{ width: `${Math.min(p.prob, 100)}%` }} />
                 </div>
-                <span className={`font-mono w-10 text-right ${probColor(p.prob)}`}>{p.prob.toFixed(0)}%</span>
+                <span className={`font-mono font-bold text-sm w-11 text-right ${probColor(p.prob)}`}>
+                  {p.prob.toFixed(0)}%
+                </span>
               </div>
             ))}
           </div>
