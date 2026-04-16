@@ -279,6 +279,9 @@ services:
       GF_SMTP_FROM_ADDRESS: alertas@parques.gov.co
       GF_SMTP_FROM_NAME: Manobi Sentinel
       GF_SMTP_SKIP_VERIFY: "true"
+      GF_RENDERING_SERVER_URL: http://grafana-renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://localhost:3000/
+      GF_UNIFIED_ALERTING_SCREENSHOTS_CAPTURE: "true"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -345,5 +348,16 @@ services:
     pid: host
     volumes:
       - /:/host:ro,rslave
+    networks: [monitoring-net]
+    logging: *default-logging
+
+  # ---------- Grafana Image Renderer ----------
+  grafana-renderer:
+    image: grafana/grafana-image-renderer:3.11.6
+    container_name: manobi-grafana-renderer
+    restart: unless-stopped
+    environment:
+      ENABLE_METRICS: true
+      HTTP_PORT: 8081
     networks: [monitoring-net]
     logging: *default-logging
