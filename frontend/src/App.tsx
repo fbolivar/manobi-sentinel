@@ -8,6 +8,7 @@ import { ReglasPage } from './pages/ReglasPage';
 import { UsuariosPage } from './pages/UsuariosPage';
 import { HistoricoPage } from './pages/HistoricoPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { MobileNav } from './components/layout/MobileNav';
 import { useAuthStore } from './stores/auth.store';
 
 const queryClient = new QueryClient({
@@ -34,6 +35,7 @@ export function App() {
           <Route path="/historico" element={<Protected><HistoricoPage /></Protected>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+        <MobileNav />
       </BrowserRouter>
     </QueryClientProvider>
     </ErrorBoundary>

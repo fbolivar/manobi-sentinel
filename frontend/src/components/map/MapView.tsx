@@ -181,25 +181,25 @@ export function MapView() {
     <div className="panel relative overflow-hidden h-full w-full min-h-[400px]">
       <div ref={mapEl} className="absolute inset-0 bg-[#0a0e1a]" />
 
-      <div className="absolute top-3 right-3 panel p-2 text-xs space-y-1 z-10 min-w-[160px]">
+      <div className="absolute top-2 right-2 md:top-3 md:right-3 panel p-2 md:p-2 text-xs space-y-1.5 z-10 min-w-[140px] md:min-w-[160px]">
         <div className="text-[10px] font-mono text-white/50 mb-1">CAPAS</div>
         {(['base', 'parques', 'eventos', 'heatmap', 'hotspots'] as const).map((k) => (
-          <label key={k} className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={layers[k]} onChange={(e) => setLayers((s) => ({ ...s, [k]: e.target.checked }))} />
-            <span className="capitalize">{k === 'heatmap' ? 'Heatmap IA' : k === 'hotspots' ? 'Puntos de calor' : k}</span>
+          <label key={k} className="flex items-center gap-2 cursor-pointer py-0.5">
+            <input type="checkbox" className="h-4 w-4 md:h-3.5 md:w-3.5" checked={layers[k]} onChange={(e) => setLayers((s) => ({ ...s, [k]: e.target.checked }))} />
+            <span className="capitalize text-xs">{k === 'heatmap' ? 'Heatmap IA' : k === 'hotspots' ? 'Puntos de calor' : k}</span>
           </label>
         ))}
         {layers.heatmap && (
           <select value={heatTipo} onChange={(e) => setHeatTipo(e.target.value as 'incendio' | 'inundacion')}
             title="Tipo de heatmap IA" aria-label="Tipo de heatmap IA"
-            className="w-full mt-1 bg-bg-surface2 border border-border-subtle rounded px-1 py-0.5 text-[11px] font-mono">
+            className="w-full mt-1 bg-bg-surface2 border border-border-subtle rounded px-2 py-1.5 text-xs font-mono">
             <option value="incendio">Incendio</option>
             <option value="inundacion">Inundación</option>
           </select>
         )}
       </div>
 
-      <div className="absolute bottom-3 right-3 panel p-2 text-[10px] font-mono z-10">
+      <div className="absolute bottom-2 right-2 md:bottom-3 md:right-3 panel p-2 text-[10px] font-mono z-10 hidden md:block">
         <div className="text-white/50 mb-1">NIVEL DE RIESGO</div>
         <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-sm" style={{background:NIVEL_FILL.alto, border:`1px solid ${NIVEL_STROKE.alto}`}}/>Alto</div>
         <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-sm" style={{background:NIVEL_FILL.medio, border:`1px solid ${NIVEL_STROKE.medio}`}}/>Medio</div>
@@ -207,8 +207,8 @@ export function MapView() {
       </div>
 
       {selected && (
-        <div className="absolute top-3 left-3 panel p-3 max-w-xs z-10 space-y-1">
-          <button onClick={() => setSelected(null)} className="absolute top-1 right-2 text-white/50 hover:text-white">×</button>
+        <div className="absolute top-2 left-2 md:top-3 md:left-3 panel p-3 max-w-[85vw] md:max-w-xs z-10 space-y-1">
+          <button type="button" onClick={() => setSelected(null)} className="absolute top-1 right-2 text-white/50 hover:text-white text-lg touch-target">×</button>
           <div className="text-sm font-bold">{selected.nombre}</div>
           {selected.region && <div className="text-xs text-white/60">Región: {selected.region}</div>}
           {selected.nivel && <div className="text-xs">Nivel: <span className={`chip chip-${selected.nivel === 'alto' ? 'rojo' : selected.nivel === 'medio' ? 'amarillo' : 'verde'}`}>{selected.nivel}</span></div>}

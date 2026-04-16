@@ -79,8 +79,8 @@ export function HistoricoPage() {
   return (
     <div className="h-screen flex flex-col">
       <TopBar />
-      <main className="flex-1 overflow-auto p-4 space-y-4">
-        <div className="flex flex-wrap gap-3 items-end">
+      <main className="flex-1 overflow-auto p-3 md:p-4 space-y-3 md:space-y-4 pb-20 md:pb-4">
+        <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-3 items-end">
           <label className="block">
             <span className="text-xs font-mono text-white/50">PARQUE</span>
             <select value={parqueId} onChange={(e) => setParqueId(e.target.value)}
@@ -141,7 +141,7 @@ export function HistoricoPage() {
           </div>
         </section>
 
-        <section className="panel overflow-hidden flex flex-col max-h-[50vh]">
+        <section className="panel overflow-hidden flex flex-col max-h-[60vh] md:max-h-[50vh]">
           <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
             <h2 className="text-sm font-bold tracking-wider">HISTORIAL ({alertas.data?.length ?? 0})</h2>
           </div>

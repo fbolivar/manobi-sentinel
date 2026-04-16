@@ -76,7 +76,7 @@ export function ReglasPage() {
   return (
     <div className="h-screen flex flex-col">
       <TopBar />
-      <main className="flex-1 overflow-auto p-4 grid gap-4 grid-cols-1 lg:grid-cols-[1fr_420px]">
+      <main className="flex-1 overflow-auto p-3 md:p-4 pb-20 md:pb-4 grid gap-3 md:gap-4 grid-cols-1 lg:grid-cols-[1fr_420px]">
         <section className="panel overflow-hidden flex flex-col">
           <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
             <h2 className="text-sm font-bold tracking-wider">REGLAS DE ALERTA ({list.data?.length ?? 0})</h2>
