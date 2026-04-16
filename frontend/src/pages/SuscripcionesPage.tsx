@@ -62,7 +62,7 @@ export function SuscripcionesPage() {
   return (
     <div className="h-screen flex flex-col">
       <TopBar />
-      <main className="flex-1 overflow-auto p-3 md:p-4 pb-20 md:pb-4 grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-[380px_1fr]">
+      <main className="flex-1 overflow-auto p-4 grid gap-4 grid-cols-1 md:grid-cols-[380px_1fr]">
         <aside className="panel p-4 space-y-3 h-fit">
           <h2 className="text-sm font-bold tracking-wider">NUEVA SUSCRIPCIÓN</h2>
           <label className="block">
@@ -110,9 +110,14 @@ export function SuscripcionesPage() {
               try { await subscribeToPush(niveles as ('verde' | 'amarillo' | 'rojo')[]); qc.invalidateQueries({ queryKey: ['suscripciones'] }); }
               catch (e) { alert('Push: ' + (e as Error).message); }
             }}
-            className="w-full border border-accent-blue text-accent-blue py-2 rounded hover:bg-accent-blue/10 text-xs font-mono">
-            🔔 ACTIVAR PUSH EN ESTE NAVEGADOR
+            disabled={location.protocol !== 'https:' || location.hostname === 'localhost'}
+            className="w-full border border-accent-blue text-accent-blue py-2 rounded hover:bg-accent-blue/10 text-xs font-mono disabled:opacity-30 disabled:cursor-not-allowed"
+            title={location.protocol !== 'https:' ? 'Requiere certificado SSL válido' : ''}>
+            🔔 NOTIFICACIONES PUSH
           </button>
+          {location.protocol !== 'https:' && (
+            <div className="text-[10px] text-white/40">Push requiere certificado SSL válido</div>
+          )}
           <Link to="/dashboard" className="block text-xs text-white/50 hover:text-accent-blue">← Volver al dashboard</Link>
         </aside>
 
