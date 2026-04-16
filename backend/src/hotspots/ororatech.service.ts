@@ -21,7 +21,7 @@ export class OroraTechService implements HotspotProvider {
   private readonly log = new Logger('OroraTech');
   private readonly enabled: boolean;
   private readonly apiKey: string;
-  private readonly baseUrl = 'https://api.ororatech.com/v1';
+  private readonly baseUrl = 'https://app.ororatech.com/v1';
 
   constructor(
     private readonly cfg: ConfigService,
@@ -35,28 +35,29 @@ export class OroraTechService implements HotspotProvider {
     if (!this.enabled || !this.apiKey) return [];
 
     try {
-      const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-      const { data } = await firstValueFrom(this.http.get<OroraResponse>(
-        `${this.baseUrl}/detections`, {
+      const { data } = await firstValueFrom(this.http.get<OroraGeoJSON>(
+        `${this.baseUrl}/hotspots/`, {
           timeout: 30_000,
           params: {
-            bbox: '-79,-4,-67,13',
-            since,
-            confidence_min: 30,
+            xmin: -79, ymin: -4, xmax: -67, ymax: 13,
+            minutes: 1440,
           },
-          headers: { Authorization: `Bearer ${this.apiKey}` },
+          headers: { apikey: this.apiKey },
         },
       ));
 
-      return (data.detections ?? []).map((d) => ({
-        latitud: d.latitude,
-        longitud: d.longitude,
-        intensidad_frp: d.frp ?? 0,
-        confianza: d.confidence ?? 50,
-        fecha: new Date(d.timestamp),
+      const features = data?.features ?? [];
+      this.log.log(`OroraTech: ${features.length} hotspots Colombia`);
+
+      return features.map((f) => ({
+        latitud: f.geometry.coordinates[1],
+        longitud: f.geometry.coordinates[0],
+        intensidad_frp: f.properties.frp ?? 0,
+        confianza: 75,
+        fecha: new Date(f.properties.acquisition_time),
         fuente: 'ORORATECH' as const,
-        satelite: d.satellite ?? 'OroraTech',
-        datos_raw: d as unknown as Record<string, unknown>,
+        satelite: f.properties.satellite_name ?? 'OroraTech',
+        datos_raw: f.properties as unknown as Record<string, unknown>,
       }));
     } catch (e) {
       this.log.warn(`OroraTech falló: ${(e as Error).message}`);
@@ -65,8 +66,15 @@ export class OroraTechService implements HotspotProvider {
   }
 }
 
-interface OroraDetection {
-  latitude: number; longitude: number; frp?: number;
-  confidence?: number; timestamp: string; satellite?: string;
+interface OroraFeature {
+  geometry: { coordinates: [number, number] };
+  properties: {
+    acquisition_time: string;
+    frp?: number;
+    satellite_name?: string;
+    satellite_orbit_type?: string;
+    id?: number;
+    gsd?: number;
+  };
 }
-interface OroraResponse { detections?: OroraDetection[]; }
+interface OroraGeoJSON { type: string; features: OroraFeature[]; }
