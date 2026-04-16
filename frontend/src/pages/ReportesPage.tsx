@@ -41,14 +41,23 @@ export function ReportesPage() {
       setMsg(`Error: ${e.response?.data?.message ?? 'fallo generación'}`),
   });
 
-  async function download(id: string) {
-    const { data } = await api.get(`/reportes/${id}/download`, { responseType: 'blob' });
-    const blob = new Blob([data]);
+  async function download(r: Reporte) {
+    const resp = await api.get(`/reportes/${r.id}/download`, { responseType: 'blob' });
+    const ext = r.formato ?? 'pdf';
+    const filename = r.ruta_minio ?? `reporte_${r.id.slice(0, 8)}.${ext}`;
+    const blob = new Blob([resp.data], {
+      type: ext === 'pdf' ? 'application/pdf'
+        : ext === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'text/csv',
+    });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `reporte_${id.slice(0, 8)}`;
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(a.href);
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   const toggle = (n: string) =>
@@ -131,7 +140,7 @@ export function ReportesPage() {
                     <td className="px-3 py-2 font-mono text-white/40 truncate max-w-xs">{r.ruta_minio ?? '—'}</td>
                     <td className="px-3 py-2 text-right">
                       {r.ruta_minio && (
-                        <button onClick={() => download(r.id)}
+                        <button onClick={() => download(r)}
                           className="text-xs px-3 py-1 border border-accent-blue text-accent-blue rounded hover:bg-accent-blue/10">
                           Descargar
                         </button>
