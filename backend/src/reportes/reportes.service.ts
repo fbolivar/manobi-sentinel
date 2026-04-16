@@ -43,6 +43,19 @@ export class ReportesService {
     return this.minio.presignedGetObject(bucket, r.ruta_minio, 60 * 60);
   }
 
+  async downloadStream(id: string) {
+    const r = await this.findOne(id);
+    if (!r.ruta_minio) throw new NotFoundException('Reporte sin archivo');
+    const bucket = this.cfg.get<string>('minio.bucketReportes')!;
+    const stream = await this.minio.getObject(bucket, r.ruta_minio);
+    const ext = r.formato;
+    const contentType =
+      ext === 'pdf' ? 'application/pdf'
+      : ext === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      : 'text/csv';
+    return { stream, filename: r.ruta_minio, contentType };
+  }
+
   async generar(
     tipo: string,
     formato: 'pdf' | 'xlsx' | 'csv',

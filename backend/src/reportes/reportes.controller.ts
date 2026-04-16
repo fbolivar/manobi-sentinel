@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, ParseUUIDPipe, Post, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsArray, IsDateString, IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
 import { CurrentUser, JwtUser } from '../common/decorators/current-user.decorator';
@@ -31,9 +32,13 @@ export class ReportesController {
   findOne(@Param('id', ParseUUIDPipe) id: string) { return this.svc.findOne(id); }
 
   @Get(':id/download')
-  async download(@Param('id', ParseUUIDPipe) id: string) {
-    const url = await this.svc.presignedUrl(id);
-    return { url, expira_en: '1h' };
+  async download(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response) {
+    const { stream, filename, contentType } = await this.svc.downloadStream(id);
+    res.set({
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    stream.pipe(res);
   }
 
   @Roles('admin', 'operador')
