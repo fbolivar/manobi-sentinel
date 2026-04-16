@@ -66,11 +66,29 @@ export class EventosService {
     return total;
   }
 
-  /** Snapshot de variables meteorológicas por parque (últimas 24h / 1h).
-   *  Lluvia/viento: solo eventos DENTRO del polígono (localidad importa).
-   *  Temperatura/humedad: dentro del polígono, fallback a estaciones
-   *  IDEAM a ≤150 km del parque (variables continuas, aceptable interpolar). */
+  /** Lee contexto del caché si tiene < 20 min; si no, calcula y guarda. */
   async contextoPorParque(parqueId: string): Promise<Record<string, number | string | null>> {
+    const cached = (await this.ds.query(
+      `SELECT * FROM contexto_parque_cache WHERE parque_id = $1 AND updated_at >= NOW() - INTERVAL '20 minutes'`,
+      [parqueId],
+    ))[0] as Record<string, unknown> | undefined;
+
+    if (cached) {
+      return {
+        lluvia_24h_mm: Number(cached.lluvia_24h_mm ?? 0),
+        lluvia_1h_mm: Number(cached.lluvia_1h_mm ?? 0),
+        viento_kmh: Number(cached.viento_kmh ?? 0),
+        temperatura_c: Number(cached.temperatura_c ?? 25),
+        humedad_relativa: Number(cached.humedad_relativa ?? 75),
+        dias_sin_lluvia: Number(cached.dias_sin_lluvia ?? 2),
+        'parque.nivel_riesgo': (cached.nivel_riesgo as string) ?? null,
+      };
+    }
+
+    return this.calcContexto(parqueId);
+  }
+
+  private async calcContexto(parqueId: string): Promise<Record<string, number | string | null>> {
     const row = (await this.ds.query(
       `WITH pq AS (SELECT geometria, nivel_riesgo FROM parques WHERE id = $1),
        dentro AS (
@@ -80,12 +98,11 @@ export class EventosService {
            AND e.fecha >= NOW() - INTERVAL '24 hours'
        ),
        cercanos_tyh AS (
-         SELECT e.tipo, e.intensidad,
-                ST_DistanceSphere(ST_Centroid(pq.geometria), e.ubicacion) AS dist_m
+         SELECT e.tipo, e.intensidad
          FROM eventos_climaticos e, pq
          WHERE e.tipo IN ('temperatura','humedad')
            AND e.fecha >= NOW() - INTERVAL '24 hours'
-           AND ST_DWithin(pq.geometria::geography, e.ubicacion::geography, 150000)
+           AND ST_DWithin(pq.geometria, e.ubicacion, 1.5)
        )
        SELECT
          COALESCE((SELECT SUM(intensidad) FROM dentro WHERE tipo='lluvia'), 0) AS lluvia_24h_mm,
@@ -112,7 +129,7 @@ export class EventosService {
        WHERE p.id = $1 AND e.tipo = 'lluvia' AND ST_Intersects(p.geometria, e.ubicacion)`,
       [parqueId],
     ))[0] as { n: string; dias: string | null };
-    return {
+    const ctx = {
       lluvia_24h_mm: Number(row?.lluvia_24h_mm ?? 0),
       lluvia_1h_mm: Number(row?.lluvia_1h_mm ?? 0),
       viento_kmh: Number(row?.viento_kmh ?? 0),
@@ -123,5 +140,20 @@ export class EventosService {
         : Math.max(0, Math.floor(Number(dsl?.dias ?? 0))),
       'parque.nivel_riesgo': row?.parque_nivel_riesgo ?? null,
     };
+
+    await this.ds.query(
+      `INSERT INTO contexto_parque_cache (parque_id, lluvia_24h_mm, lluvia_1h_mm, viento_kmh, temperatura_c, humedad_relativa, dias_sin_lluvia, nivel_riesgo, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+       ON CONFLICT (parque_id) DO UPDATE SET
+         lluvia_24h_mm=EXCLUDED.lluvia_24h_mm, lluvia_1h_mm=EXCLUDED.lluvia_1h_mm,
+         viento_kmh=EXCLUDED.viento_kmh, temperatura_c=EXCLUDED.temperatura_c,
+         humedad_relativa=EXCLUDED.humedad_relativa, dias_sin_lluvia=EXCLUDED.dias_sin_lluvia,
+         nivel_riesgo=EXCLUDED.nivel_riesgo, updated_at=NOW()`,
+      [parqueId, ctx.lluvia_24h_mm, ctx.lluvia_1h_mm, ctx.viento_kmh,
+       ctx.temperatura_c, ctx.humedad_relativa, ctx.dias_sin_lluvia,
+       ctx['parque.nivel_riesgo']],
+    ).catch(() => {});
+
+    return ctx;
   }
 }

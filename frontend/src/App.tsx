@@ -7,6 +7,7 @@ import { SuscripcionesPage } from './pages/SuscripcionesPage';
 import { ReglasPage } from './pages/ReglasPage';
 import { UsuariosPage } from './pages/UsuariosPage';
 import { HistoricoPage } from './pages/HistoricoPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuthStore } from './stores/auth.store';
 
 const queryClient = new QueryClient({
@@ -20,6 +21,7 @@ function Protected({ children }: { children: React.ReactNode }) {
 
 export function App() {
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
@@ -34,5 +36,6 @@ export function App() {
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
