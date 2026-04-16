@@ -15,15 +15,17 @@ function wrap(ui: React.ReactNode) {
 }
 
 describe('LoginPage', () => {
-  it('renderiza formulario de login', () => {
-    render(wrap(<LoginPage />));
-    expect(screen.getByText('Manobi Sentinel')).toBeInTheDocument();
-    expect(screen.getByText('INICIAR SESIÓN')).toBeInTheDocument();
+  it('renderiza sin errores', () => {
+    const { container } = render(wrap(<LoginPage />));
+    expect(container.querySelector('form')).toBeInTheDocument();
+    expect(container.querySelector('input[type="email"]')).toBeInTheDocument();
+    expect(container.querySelector('input[type="password"]')).toBeInTheDocument();
+    expect(container.querySelector('button[type="submit"]')).toBeInTheDocument();
   });
 
-  it('tiene campos email y contraseña', () => {
+  it('tiene placeholders correctos', () => {
     render(wrap(<LoginPage />));
-    expect(screen.getByText('EMAIL')).toBeInTheDocument();
-    expect(screen.getByText('CONTRASEÑA')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/parquesnacionales/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/8 caracteres/i)).toBeInTheDocument();
   });
 });
