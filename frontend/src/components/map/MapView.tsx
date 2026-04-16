@@ -239,6 +239,13 @@ export function MapView() {
               {selected.fecha && <div>Fecha: {new Date(selected.fecha as string).toLocaleString('es-CO', { timeZone: 'America/Bogota' })}</div>}
             </div>
           )}
+          <button type="button" onClick={() => {
+            setSelected(null);
+            useMapStore.getState().clearFocus();
+            mapRef.current?.getView().animate({ center: fromLonLat([-73.5, 4.5]), zoom: 5.2, duration: 500 });
+          }} className="w-full mt-2 py-1.5 text-xs font-mono border border-accent-blue/50 text-accent-blue rounded hover:bg-accent-blue/10 active:bg-accent-blue/20 touch-target">
+            ← Vista general Colombia
+          </button>
         </div>
       )}
     </div>
