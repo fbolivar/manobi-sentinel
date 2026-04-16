@@ -27,23 +27,23 @@ export function TopBar() {
   const date = now.toLocaleDateString('es-CO', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
 
   const linkCls = ({ isActive }: { isActive: boolean }) =>
-    `px-3 py-1.5 rounded text-xs font-mono tracking-wider uppercase transition whitespace-nowrap ${
-      isActive ? 'bg-accent-green/10 text-accent-green border border-accent-green/40' : 'text-white/60 hover:text-white'
+    `px-3 py-1.5 rounded-lg text-xs font-medium tracking-wide transition whitespace-nowrap ${
+      isActive ? 'bg-pnn-green/10 text-pnn-green-dark border border-pnn-green/30' : 'text-txt-muted hover:text-txt hover:bg-bg-surface2'
     }`;
 
   return (
-    <header className="h-12 md:h-14 px-3 md:px-4 flex items-center justify-between border-b border-border-subtle bg-bg-surface/60 backdrop-blur shrink-0">
-      {/* Logo — compacto en mobile */}
+    <header className="h-12 md:h-14 px-3 md:px-5 flex items-center justify-between border-b border-border-subtle bg-bg-surface shrink-0">
+      {/* Logo */}
       <div className="flex items-center gap-2 md:gap-3 min-w-0">
-        <div className="h-7 w-7 md:h-8 md:w-8 rounded bg-accent-green/20 border border-accent-green grid place-items-center font-bold text-accent-green text-sm">M</div>
+        <div className="h-8 w-8 rounded-lg bg-pnn-green grid place-items-center font-bold text-white text-sm">M</div>
         <div className="hidden sm:block">
-          <div className="text-sm font-bold tracking-wider">MANOBI SENTINEL</div>
-          <div className="text-[10px] font-mono text-white/50">PNN COLOMBIA</div>
+          <div className="text-sm font-bold text-txt tracking-wide">MANOBI SENTINEL</div>
+          <div className="text-[10px] text-txt-light">PNN Colombia</div>
         </div>
-        <span className="sm:hidden text-xs font-bold tracking-wider">SENTINEL</span>
+        <span className="sm:hidden text-xs font-bold text-txt tracking-wide">SENTINEL</span>
       </div>
 
-      {/* Nav links — solo desktop */}
+      {/* Nav — desktop */}
       <nav className="hidden md:flex items-center gap-1 mx-4 overflow-x-auto scrollbar-hide">
         <NavLink to="/dashboard" className={linkCls}>Dashboard</NavLink>
         <NavLink to="/historico" className={linkCls}>Histórico</NavLink>
@@ -53,33 +53,37 @@ export function TopBar() {
         {user?.rol === 'admin' && <NavLink to="/usuarios" className={linkCls}>Usuarios</NavLink>}
       </nav>
 
-      {/* Status dots — solo desktop */}
-      <div className="hidden lg:flex items-center gap-3 text-xs font-mono">
+      {/* Status — desktop */}
+      <div className="hidden lg:flex items-center gap-3 text-xs text-txt-muted">
         <span className="flex items-center gap-1.5"><Dot ok={apiHealth.isSuccess} /> API</span>
         <span className="flex items-center gap-1.5"><Dot ok={apiHealth.isSuccess} /> DB</span>
         <span className="flex items-center gap-1.5"><Dot ok={apiHealth.isSuccess} /> IA</span>
       </div>
 
-      {/* Right: clock + user */}
+      {/* Right */}
       <div className="flex items-center gap-2 md:gap-4">
-        {/* Mobile: single dot + time */}
         <div className="md:hidden flex items-center gap-2">
           <Dot ok={apiHealth.isSuccess} />
-          <span className="font-mono text-xs text-accent-green">{time}</span>
+          <span className="font-mono text-xs text-pnn-green font-semibold">{time}</span>
         </div>
-        {/* Desktop: full clock */}
         <div className="hidden md:block text-right leading-tight">
-          <div className="font-mono text-sm text-accent-green">{time}</div>
-          <div className="text-[10px] text-white/50 uppercase">{date} · UTC-5</div>
+          <div className="font-mono text-sm text-pnn-green font-semibold">{time}</div>
+          <div className="text-[10px] text-txt-light uppercase">{date}</div>
         </div>
         {user && (
-          <button onClick={logout}
-            className="h-8 w-8 md:h-auto md:w-auto md:px-2 md:py-1 border border-border-subtle rounded hover:bg-bg-surface2 text-xs flex items-center justify-center touch-target"
-            title="Cerrar sesión" aria-label="Cerrar sesión">
-            <span className="md:hidden">⎋</span>
-            <span className="hidden md:inline">⎋ {user.nombre?.split(' ')[0]}</span>
-          </button>
+          <div className="hidden md:flex items-center gap-2 pl-3 border-l border-border-subtle">
+            <div className="h-8 w-8 rounded-full bg-pnn-green/10 grid place-items-center text-pnn-green-dark text-xs font-bold">
+              {user.nombre?.charAt(0).toUpperCase()}
+            </div>
+            <div className="text-right leading-tight">
+              <div className="text-xs font-medium text-txt">{user.nombre?.split(' ')[0]}</div>
+              <div className="text-[10px] text-txt-light uppercase">{user.rol}</div>
+            </div>
+          </div>
         )}
+        <button type="button" onClick={logout}
+          className="h-8 w-8 rounded-lg border border-border-subtle hover:bg-bg-surface2 text-txt-muted grid place-items-center text-sm transition touch-target"
+          title="Cerrar sesión" aria-label="Cerrar sesión">⎋</button>
       </div>
     </header>
   );

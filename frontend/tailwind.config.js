@@ -4,9 +4,28 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: { DEFAULT: '#0a0e1a', surface: '#111827', surface2: '#1f2937' },
-        accent: { green: '#00ff88', red: '#ff3b3b', blue: '#00bfff', amber: '#ffb020' },
-        border: { subtle: 'rgba(255,255,255,0.08)', strong: 'rgba(255,255,255,0.18)' },
+        /* PNN Corporate palette */
+        pnn: {
+          green: '#85B425',
+          'green-dark': '#5B8021',
+          'green-light': '#A3D633',
+          blue: '#004880',
+          'blue-light': '#0069B4',
+          forest: '#333A17',
+        },
+        /* App surfaces — light theme */
+        bg: { DEFAULT: '#F4F6F9', surface: '#FFFFFF', surface2: '#EDF0F5' },
+        /* Accents */
+        accent: {
+          green: '#01A551',
+          red: '#E53935',
+          blue: '#0069B4',
+          amber: '#F9A825',
+        },
+        /* Borders */
+        border: { subtle: 'rgba(0,0,0,0.08)', strong: 'rgba(0,0,0,0.15)' },
+        /* Text */
+        txt: { DEFAULT: '#242424', muted: '#6B7280', light: '#9CA3AF' },
       },
       fontFamily: {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
@@ -18,9 +37,13 @@ export default {
       },
       keyframes: {
         pulseRed: {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(255,59,59,0.6)' },
-          '50%': { boxShadow: '0 0 0 10px rgba(255,59,59,0)' },
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(229,57,53,0.5)' },
+          '50%': { boxShadow: '0 0 0 8px rgba(229,57,53,0)' },
         },
+      },
+      boxShadow: {
+        card: '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
+        'card-hover': '0 4px 12px rgba(0,0,0,0.1)',
       },
     },
   },

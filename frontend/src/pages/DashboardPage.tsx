@@ -24,11 +24,11 @@ export function DashboardPage() {
       <TopBar />
 
       {/* Mobile tab switcher */}
-      <div className="md:hidden flex border-b border-border-subtle bg-bg-surface/80 shrink-0">
+      <div className="md:hidden flex border-b border-border-subtle bg-bg-surface shrink-0">
         {([['mapa', 'Mapa'], ['alertas', 'Alertas'], ['metricas', 'Métricas']] as const).map(([key, label]) => (
           <button key={key} type="button" onClick={() => setMobileTab(key)}
-            className={`flex-1 py-2.5 text-xs font-mono uppercase tracking-wider transition touch-target ${
-              mobileTab === key ? 'text-accent-green border-b-2 border-accent-green' : 'text-white/50'
+            className={`flex-1 py-2.5 text-xs font-medium uppercase tracking-wider transition touch-target ${
+              mobileTab === key ? 'text-pnn-green border-b-2 border-pnn-green' : 'text-txt-muted'
             }`}>
             {label}
           </button>

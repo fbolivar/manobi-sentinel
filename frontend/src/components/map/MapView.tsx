@@ -18,8 +18,8 @@ import { api } from '../../lib/api';
 import { useMapStore } from '../../stores/map.store';
 import type { EventoClimatico } from '../../types';
 
-const NIVEL_FILL = { alto: 'rgba(255,59,59,0.45)', medio: 'rgba(255,176,32,0.35)', bajo: 'rgba(0,255,136,0.25)' } as const;
-const NIVEL_STROKE = { alto: '#ff3b3b', medio: '#ffb020', bajo: '#00ff88' } as const;
+const NIVEL_FILL = { alto: 'rgba(229,57,53,0.3)', medio: 'rgba(249,168,37,0.25)', bajo: 'rgba(133,180,37,0.2)' } as const;
+const NIVEL_STROKE = { alto: '#E53935', medio: '#F9A825', bajo: '#85B425' } as const;
 
 function styleFor(feature: any) {
   const nivel = (feature.get('nivel_riesgo') as 'alto' | 'medio' | 'bajo') ?? 'bajo';
@@ -32,7 +32,7 @@ function styleFor(feature: any) {
 const eventoStyle = (tipo: string) => new Style({
   image: new CircleStyle({
     radius: 5,
-    fill: new Fill({ color: tipo === 'lluvia' ? '#00bfff' : tipo === 'incendio' ? '#ff3b3b' : '#ffb020' }),
+    fill: new Fill({ color: tipo === 'lluvia' ? '#0069B4' : tipo === 'incendio' ? '#E53935' : '#F9A825' }),
     stroke: new Stroke({ color: '#fff', width: 1 }),
   }),
 });
@@ -200,18 +200,18 @@ export function MapView() {
     <div className="panel relative overflow-hidden h-full w-full min-h-[400px]">
       <div ref={mapEl} className="absolute inset-0 bg-[#0a0e1a]" />
 
-      <div className="absolute top-2 right-2 md:top-3 md:right-3 panel p-2 md:p-2 text-xs space-y-1.5 z-10 min-w-[140px] md:min-w-[160px]">
-        <div className="text-[10px] font-mono text-white/50 mb-1">CAPAS</div>
+      <div className="absolute top-2 right-2 md:top-3 md:right-3 panel p-2.5 text-xs space-y-1.5 z-10 min-w-[140px] md:min-w-[160px]">
+        <div className="text-[10px] font-semibold text-txt-muted uppercase tracking-wider mb-1">Capas</div>
         {(['base', 'parques', 'eventos', 'heatmap', 'hotspots'] as const).map((k) => (
           <label key={k} className="flex items-center gap-2 cursor-pointer py-0.5">
             <input type="checkbox" className="h-4 w-4 md:h-3.5 md:w-3.5" checked={layers[k]} onChange={(e) => setLayers((s) => ({ ...s, [k]: e.target.checked }))} />
-            <span className="capitalize text-xs">{k === 'heatmap' ? 'Heatmap IA' : k === 'hotspots' ? 'Puntos de calor' : k}</span>
+            <span className="capitalize text-xs text-txt">{k === 'heatmap' ? 'Heatmap IA' : k === 'hotspots' ? 'Puntos de calor' : k}</span>
           </label>
         ))}
         {layers.heatmap && (
           <select value={heatTipo} onChange={(e) => setHeatTipo(e.target.value as 'incendio' | 'inundacion')}
             title="Tipo de heatmap IA" aria-label="Tipo de heatmap IA"
-            className="w-full mt-1 bg-bg-surface2 border border-border-subtle rounded px-2 py-1.5 text-xs font-mono">
+            className="input-field mt-1 !py-1.5 text-xs">
             <option value="incendio">Incendio</option>
             <option value="inundacion">Inundación</option>
           </select>
@@ -227,24 +227,28 @@ export function MapView() {
 
       {selected && (
         <div className="absolute top-2 left-2 md:top-3 md:left-3 panel p-3 max-w-[85vw] md:max-w-xs z-10 space-y-1">
-          <button type="button" onClick={() => setSelected(null)} className="absolute top-1 right-2 text-white/50 hover:text-white text-lg touch-target">×</button>
-          <div className="text-sm font-bold">{selected.nombre}</div>
-          {selected.region && <div className="text-xs text-white/60">Región: {selected.region}</div>}
-          {selected.nivel && <div className="text-xs">Nivel: <span className={`chip chip-${selected.nivel === 'alto' ? 'rojo' : selected.nivel === 'medio' ? 'amarillo' : 'verde'}`}>{selected.nivel}</span></div>}
+          <button type="button" onClick={() => setSelected(null)} className="absolute top-1.5 right-2 text-txt-light hover:text-txt text-lg touch-target">×</button>
+          <div className="text-sm font-semibold text-txt">{selected.nombre}</div>
+          {selected.region && <div className="text-xs text-txt-muted">{selected.region}</div>}
+          {selected.nivel && <div className="text-xs mt-1">
+            <span className={`chip chip-${selected.nivel === 'alto' ? 'rojo' : selected.nivel === 'medio' ? 'amarillo' : 'verde'}`}>
+              {selected.nivel}
+            </span>
+          </div>}
           {selected.frp != null && (
-            <div className="text-xs font-mono text-white/70 space-y-0.5 mt-1 border-t border-border-subtle pt-1">
-              <div>FRP: <b>{selected.frp} MW</b></div>
-              <div>Confianza: <b>{selected.confianza}%</b></div>
+            <div className="text-xs text-txt-muted space-y-0.5 mt-2 border-t border-border-subtle pt-2">
+              <div>FRP: <b className="text-txt">{selected.frp} MW</b></div>
+              <div>Confianza: <b className="text-txt">{selected.confianza}%</b></div>
               <div>Fuente: {selected.fuente}</div>
-              {selected.fecha && <div>Fecha: {new Date(selected.fecha as string).toLocaleString('es-CO', { timeZone: 'America/Bogota' })}</div>}
+              {selected.fecha && <div>{new Date(selected.fecha as string).toLocaleString('es-CO', { timeZone: 'America/Bogota' })}</div>}
             </div>
           )}
           <button type="button" onClick={() => {
             setSelected(null);
             useMapStore.getState().clearFocus();
             mapRef.current?.getView().animate({ center: fromLonLat([-73.5, 4.5]), zoom: 5.2, duration: 500 });
-          }} className="w-full mt-2 py-1.5 text-xs font-mono border border-accent-blue/50 text-accent-blue rounded hover:bg-accent-blue/10 active:bg-accent-blue/20 touch-target">
-            ← Vista general Colombia
+          }} className="btn-outline w-full mt-2 !py-1.5 !text-xs touch-target">
+            ← Vista general
           </button>
         </div>
       )}

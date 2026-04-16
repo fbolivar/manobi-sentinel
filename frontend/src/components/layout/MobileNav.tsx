@@ -11,7 +11,6 @@ const items = [
 
 export function MobileNav() {
   const user = useAuthStore((s) => s.user);
-
   const all = user?.rol === 'admin'
     ? [...items, { to: '/usuarios', label: 'Usuarios', icon: '👤' }]
     : items;
@@ -22,8 +21,8 @@ export function MobileNav() {
         {all.map((it) => (
           <NavLink key={it.to} to={it.to}
             className={({ isActive }) =>
-              `flex flex-col items-center py-2 px-1 min-w-[56px] text-[10px] transition-colors ${
-                isActive ? 'text-accent-green' : 'text-white/50'
+              `flex flex-col items-center py-2 px-1 min-w-[48px] text-[10px] font-medium transition-colors ${
+                isActive ? 'text-pnn-green' : 'text-txt-muted'
               }`
             }>
             <span className="text-lg leading-none">{it.icon}</span>

@@ -20,18 +20,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return (
       <div className="h-screen flex items-center justify-center p-6 bg-bg">
-        <div className="panel p-6 max-w-lg space-y-3">
+        <div className="panel p-8 max-w-lg space-y-4 text-center">
+          <div className="text-4xl">⚠</div>
           <h1 className="text-lg font-bold text-accent-red">Error en la aplicación</h1>
-          <p className="text-sm text-white/70 font-mono">{this.state.error.message}</p>
-          <div className="flex gap-2 pt-2">
-            <button onClick={this.reset}
-              className="px-4 py-2 border border-accent-blue text-accent-blue rounded hover:bg-accent-blue/10 text-xs font-mono">
-              Reintentar
-            </button>
-            <button onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-accent-green text-bg font-bold rounded hover:brightness-110 text-xs">
-              Recargar página
-            </button>
+          <p className="text-sm text-txt-muted font-mono">{this.state.error.message}</p>
+          <div className="flex gap-3 justify-center pt-2">
+            <button onClick={this.reset} className="btn-outline text-sm">Reintentar</button>
+            <button onClick={() => window.location.reload()} className="btn-primary text-sm">Recargar página</button>
           </div>
         </div>
       </div>
