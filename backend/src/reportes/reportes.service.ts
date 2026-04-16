@@ -78,10 +78,16 @@ export class ReportesService {
     if (params.niveles?.length) where!['nivel'] = In(params.niveles);
     if (params.parque_id) where!['parque_id'] = params.parque_id;
 
-    const alertas = await this.alertas.find({
+    const alertasRaw = await this.alertas.find({
       where, relations: { parque: true },
       order: { fecha_inicio: 'DESC' }, take: 2000,
     });
+
+    const nivelOrden: Record<string, number> = { rojo: 0, amarillo: 1, verde: 2 };
+    const alertas = alertasRaw.sort((a, b) =>
+      (nivelOrden[a.nivel] ?? 9) - (nivelOrden[b.nivel] ?? 9)
+      || new Date(b.fecha_inicio).getTime() - new Date(a.fecha_inicio).getTime()
+    );
 
     let buf: Buffer; let ext: string; let contentType: string;
     if (formato === 'csv')       { buf = alertasToCsv(alertas); ext = 'csv'; contentType = 'text/csv'; }
