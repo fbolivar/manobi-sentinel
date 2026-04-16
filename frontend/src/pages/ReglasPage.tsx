@@ -88,14 +88,14 @@ export function ReglasPage() {
             )}
           </div>
           <div className="overflow-y-auto flex-1 divide-y divide-border-subtle">
-            {list.isLoading && <div className="p-6 text-center text-white/40 text-xs">Cargando…</div>}
-            {list.data?.length === 0 && <div className="p-6 text-center text-white/40 text-xs">Sin reglas.</div>}
+            {list.isLoading && <div className="p-6 text-center text-txt-light text-xs">Cargando…</div>}
+            {list.data?.length === 0 && <div className="p-6 text-center text-txt-light text-xs">Sin reglas.</div>}
             {list.data?.map((r) => (
               <div key={r.id} className="px-4 py-3 flex items-center gap-3">
                 <div className={`h-2 w-2 rounded-full ${r.activa ? 'bg-accent-green animate-pulse' : 'bg-white/20'}`} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm truncate">{r.nombre ?? '(sin nombre)'}</div>
-                  <div className="text-[10px] font-mono text-white/50 truncate">{JSON.stringify(r.condicion)}</div>
+                  <div className="text-[10px] font-mono text-txt-muted truncate">{JSON.stringify(r.condicion)}</div>
                 </div>
                 {r.nivel_resultante && (
                   <span className={`chip chip-${r.nivel_resultante === 'rojo' ? 'rojo' : r.nivel_resultante === 'amarillo' ? 'amarillo' : 'verde'}`}>
@@ -122,7 +122,7 @@ export function ReglasPage() {
             ))}
           </div>
           <div className="px-4 py-2 border-t border-border-subtle">
-            <Link to="/dashboard" className="text-xs text-white/50 hover:text-accent-blue">← Volver al dashboard</Link>
+            <Link to="/dashboard" className="text-xs text-txt-muted hover:text-pnn-blue">← Volver al dashboard</Link>
           </div>
         </section>
 
@@ -130,16 +130,16 @@ export function ReglasPage() {
           <aside className="panel p-4 space-y-3 h-fit sticky top-4">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold tracking-wider">{editing.id ? 'EDITAR REGLA' : 'NUEVA REGLA'}</h2>
-              <button onClick={() => setEditing(null)} className="text-white/50 hover:text-white">✕</button>
+              <button onClick={() => setEditing(null)} className="text-txt-muted hover:text-txt">✕</button>
             </div>
             {!esAdmin && <div className="text-xs text-accent-red">Solo admin puede guardar.</div>}
             <label className="block">
-              <span className="text-xs font-mono text-white/50">NOMBRE</span>
+              <span className="text-xs font-mono text-txt-muted">NOMBRE</span>
               <input value={editing.nombre ?? ''} onChange={(e) => setEditing({ ...editing, nombre: e.target.value })}
                 className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-sm" />
             </label>
             <label className="block">
-              <span className="text-xs font-mono text-white/50">NIVEL RESULTANTE</span>
+              <span className="text-xs font-mono text-txt-muted">NIVEL RESULTANTE</span>
               <select value={editing.nivel_resultante ?? 'amarillo'}
                 onChange={(e) => setEditing({ ...editing, nivel_resultante: e.target.value as Regla['nivel_resultante'] })}
                 title="Nivel" aria-label="Nivel"
@@ -150,17 +150,17 @@ export function ReglasPage() {
               </select>
             </label>
             <label className="block">
-              <span className="text-xs font-mono text-white/50">ACCIÓN (descripción)</span>
+              <span className="text-xs font-mono text-txt-muted">ACCIÓN (descripción)</span>
               <input value={editing.accion ?? ''} onChange={(e) => setEditing({ ...editing, accion: e.target.value })}
                 className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-sm" />
             </label>
             <label className="block">
-              <span className="text-xs font-mono text-white/50">CONDICIÓN (JSON)</span>
+              <span className="text-xs font-mono text-txt-muted">CONDICIÓN (JSON)</span>
               <textarea value={draft} onChange={(e) => setDraft(e.target.value)}
                 rows={12}
                 className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-xs whitespace-pre" />
             </label>
-            <div className="text-[10px] font-mono text-white/40">
+            <div className="text-[10px] font-mono text-txt-light">
               Campos disponibles: temperatura_c, humedad_relativa, dias_sin_lluvia, viento_kmh,
               lluvia_24h_mm, lluvia_1h_mm, parque.nivel_riesgo, prediccion_ia.probabilidad, prediccion_ia.incendio, prediccion_ia.inundacion
             </div>

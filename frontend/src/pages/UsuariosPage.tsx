@@ -90,8 +90,8 @@ export function UsuariosPage() {
         <main className="flex-1 grid place-items-center pb-20 md:pb-0">
           <div className="panel p-6 text-center">
             <div className="text-accent-red text-sm font-bold">Acceso restringido</div>
-            <div className="text-xs text-white/50 mt-1">Solo administradores pueden gestionar usuarios.</div>
-            <Link to="/dashboard" className="inline-block mt-3 text-xs text-accent-blue hover:underline">← Volver</Link>
+            <div className="text-xs text-txt-muted mt-1">Solo administradores pueden gestionar usuarios.</div>
+            <Link to="/dashboard" className="inline-block mt-3 text-xs text-pnn-blue hover:underline">← Volver</Link>
           </div>
         </main>
       </div>
@@ -102,20 +102,20 @@ export function UsuariosPage() {
     <aside className="panel p-4 space-y-3 h-fit">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold tracking-wider">EDITAR USUARIO</h2>
-        <button type="button" onClick={() => setEditing(null)} className="text-white/50 hover:text-white text-lg">×</button>
+        <button type="button" onClick={() => setEditing(null)} className="text-txt-muted hover:text-txt text-lg">×</button>
       </div>
       <label className="block">
-        <span className="text-xs font-mono text-white/50">NOMBRE</span>
+        <span className="text-xs font-mono text-txt-muted">NOMBRE</span>
         <input value={editing.nombre} onChange={(e) => setEditing({ ...editing, nombre: e.target.value })}
           className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-sm" />
       </label>
       <label className="block">
-        <span className="text-xs font-mono text-white/50">EMAIL</span>
+        <span className="text-xs font-mono text-txt-muted">EMAIL</span>
         <input value={editing.email} disabled
           className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-sm opacity-50" />
       </label>
       <label className="block">
-        <span className="text-xs font-mono text-white/50">ROL</span>
+        <span className="text-xs font-mono text-txt-muted">ROL</span>
         <select value={editing.rol} onChange={(e) => setEditing({ ...editing, rol: e.target.value as Rol })}
           disabled={editing.id === me?.id} title="Rol" aria-label="Rol"
           className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-sm disabled:opacity-50">
@@ -125,7 +125,7 @@ export function UsuariosPage() {
         </select>
       </label>
       <label className="block">
-        <span className="text-xs font-mono text-white/50">NUEVA CONTRASEÑA (dejar vacío para no cambiar)</span>
+        <span className="text-xs font-mono text-txt-muted">NUEVA CONTRASEÑA (dejar vacío para no cambiar)</span>
         <input type="password" value={editing.password}
           onChange={(e) => setEditing({ ...editing, password: e.target.value })}
           placeholder="mín. 8 caracteres"
@@ -147,7 +147,7 @@ export function UsuariosPage() {
         {guardar.isPending ? 'Guardando…' : 'GUARDAR CAMBIOS'}
       </button>
       <button type="button" onClick={() => setEditing(null)}
-        className="w-full border border-border-subtle text-white/60 py-2 rounded hover:bg-bg-surface2 text-xs">
+        className="w-full border border-border-subtle text-txt-muted py-2 rounded hover:bg-bg-surface2 text-xs">
         Cancelar
       </button>
     </aside>
@@ -155,22 +155,22 @@ export function UsuariosPage() {
     <aside className="panel p-4 space-y-3 h-fit">
       <h2 className="text-sm font-bold tracking-wider">NUEVO USUARIO</h2>
       <label className="block">
-        <span className="text-xs font-mono text-white/50">NOMBRE</span>
+        <span className="text-xs font-mono text-txt-muted">NOMBRE</span>
         <input value={createForm.nombre} onChange={(e) => setCreateForm({ ...createForm, nombre: e.target.value })}
           className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-sm" />
       </label>
       <label className="block">
-        <span className="text-xs font-mono text-white/50">EMAIL</span>
+        <span className="text-xs font-mono text-txt-muted">EMAIL</span>
         <input type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
           className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-sm" />
       </label>
       <label className="block">
-        <span className="text-xs font-mono text-white/50">CONTRASEÑA (≥8)</span>
+        <span className="text-xs font-mono text-txt-muted">CONTRASEÑA (≥8)</span>
         <input type="password" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
           className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-sm" />
       </label>
       <label className="block">
-        <span className="text-xs font-mono text-white/50">ROL</span>
+        <span className="text-xs font-mono text-txt-muted">ROL</span>
         <select value={createForm.rol} onChange={(e) => setCreateForm({ ...createForm, rol: e.target.value as Rol })}
           title="Rol" aria-label="Rol"
           className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-sm">
@@ -183,8 +183,8 @@ export function UsuariosPage() {
         className="w-full bg-accent-green text-bg font-bold py-2.5 rounded hover:brightness-110 disabled:opacity-50">
         {crear.isPending ? 'Creando…' : 'CREAR'}
       </button>
-      {msg && <div className={`text-xs ${msg.startsWith('Error') ? 'text-accent-red' : 'text-accent-blue'}`}>{msg}</div>}
-      <Link to="/dashboard" className="block text-xs text-white/50 hover:text-accent-blue">← Volver al dashboard</Link>
+      {msg && <div className={`text-xs ${msg.startsWith('Error') ? 'text-accent-red' : 'text-pnn-blue'}`}>{msg}</div>}
+      <Link to="/dashboard" className="block text-xs text-txt-muted hover:text-pnn-blue">← Volver al dashboard</Link>
     </aside>
   );
 
@@ -203,20 +203,20 @@ export function UsuariosPage() {
             <table className="w-full text-xs hidden md:table">
               <thead className="bg-bg-surface/50 sticky top-0">
                 <tr>
-                  <th className="px-3 py-2 text-left font-mono text-white/50">NOMBRE</th>
-                  <th className="px-3 py-2 text-left font-mono text-white/50">EMAIL</th>
-                  <th className="px-3 py-2 text-left font-mono text-white/50">ROL</th>
-                  <th className="px-3 py-2 text-left font-mono text-white/50">ESTADO</th>
-                  <th className="px-3 py-2 text-left font-mono text-white/50">ÚLTIMO LOGIN</th>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted">NOMBRE</th>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted">EMAIL</th>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted">ROL</th>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted">ESTADO</th>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted">ÚLTIMO LOGIN</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
               <tbody>
-                {list.isLoading && <tr><td colSpan={6} className="text-center py-6 text-white/40">Cargando…</td></tr>}
+                {list.isLoading && <tr><td colSpan={6} className="text-center py-6 text-txt-light">Cargando…</td></tr>}
                 {list.data?.map((u) => (
                   <tr key={u.id} className="border-b border-border-subtle/50 hover:bg-bg-surface2/50">
                     <td className="px-3 py-2">{u.nombre}</td>
-                    <td className="px-3 py-2 font-mono text-white/70">{u.email}</td>
+                    <td className="px-3 py-2 font-mono text-txt-muted">{u.email}</td>
                     <td className="px-3 py-2">
                       <span className={`chip ${u.rol === 'admin' ? 'chip-rojo' : u.rol === 'operador' ? 'chip-amarillo' : 'chip-verde'}`}>
                         {u.rol}
@@ -226,12 +226,12 @@ export function UsuariosPage() {
                       <span className={`inline-block h-2 w-2 rounded-full ${u.activo ? 'bg-accent-green' : 'bg-white/20'}`} />
                       <span className="ml-1.5">{u.activo ? 'Activo' : 'Inactivo'}</span>
                     </td>
-                    <td className="px-3 py-2 font-mono text-white/60">
+                    <td className="px-3 py-2 font-mono text-txt-muted">
                       {u.ultimo_login ? new Date(u.ultimo_login).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : '—'}
                     </td>
                     <td className="px-3 py-2 text-right flex gap-1 justify-end">
                       <button type="button" onClick={() => openEdit(u)}
-                        className="text-xs px-3 py-1.5 border border-accent-blue/50 text-accent-blue rounded hover:bg-accent-blue/10">
+                        className="text-xs px-3 py-1.5 border border-pnn-blue/50 text-pnn-blue rounded hover:bg-pnn-blue/10">
                         Editar
                       </button>
                       <button type="button" onClick={() => confirm(`¿Eliminar ${u.email}?`) && remove.mutate(u.id)}
@@ -247,13 +247,13 @@ export function UsuariosPage() {
 
             {/* Mobile: cards */}
             <div className="md:hidden divide-y divide-border-subtle">
-              {list.isLoading && <div className="p-4 text-xs text-white/40">Cargando…</div>}
+              {list.isLoading && <div className="p-4 text-xs text-txt-light">Cargando…</div>}
               {list.data?.map((u) => (
                 <div key={u.id} className="p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-bold">{u.nombre}</div>
-                      <div className="text-[11px] font-mono text-white/60">{u.email}</div>
+                      <div className="text-[11px] font-mono text-txt-muted">{u.email}</div>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className={`inline-block h-2 w-2 rounded-full ${u.activo ? 'bg-accent-green' : 'bg-white/20'}`} />
@@ -264,7 +264,7 @@ export function UsuariosPage() {
                   </div>
                   <div className="flex gap-2">
                     <button type="button" onClick={() => openEdit(u)}
-                      className="flex-1 text-xs py-2 border border-accent-blue/50 text-accent-blue rounded hover:bg-accent-blue/10 touch-target">
+                      className="flex-1 text-xs py-2 border border-pnn-blue/50 text-pnn-blue rounded hover:bg-pnn-blue/10 touch-target">
                       Editar
                     </button>
                     <button type="button" onClick={() => confirm(`¿Eliminar ${u.email}?`) && remove.mutate(u.id)}

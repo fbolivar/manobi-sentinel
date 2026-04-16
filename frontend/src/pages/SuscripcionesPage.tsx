@@ -66,7 +66,7 @@ export function SuscripcionesPage() {
         <aside className="panel p-4 space-y-3 h-fit">
           <h2 className="text-sm font-bold tracking-wider">NUEVA SUSCRIPCIÓN</h2>
           <label className="block">
-            <span className="text-xs font-mono text-white/50">CANAL</span>
+            <span className="text-xs font-mono text-txt-muted">CANAL</span>
             <select value={canal} onChange={(e) => setCanal(e.target.value as 'email' | 'webhook' | 'push')}
               title="Canal" aria-label="Canal"
               className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono">
@@ -76,13 +76,13 @@ export function SuscripcionesPage() {
             </select>
           </label>
           <label className="block">
-            <span className="text-xs font-mono text-white/50">DESTINO {canal === 'email' ? '(email)' : canal === 'webhook' ? '(URL)' : '(endpoint)'}</span>
+            <span className="text-xs font-mono text-txt-muted">DESTINO {canal === 'email' ? '(email)' : canal === 'webhook' ? '(URL)' : '(endpoint)'}</span>
             <input value={destino} onChange={(e) => setDestino(e.target.value)}
               placeholder={canal === 'email' ? 'ops@parques.gov.co' : canal === 'webhook' ? 'https://hooks.slack.com/…' : '(auto)'}
               className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-xs" />
           </label>
           <label className="block">
-            <span className="text-xs font-mono text-white/50">PARQUE (opcional — todos si vacío)</span>
+            <span className="text-xs font-mono text-txt-muted">PARQUE (opcional — todos si vacío)</span>
             <select value={parque} onChange={(e) => setParque(e.target.value)}
               title="Parque" aria-label="Parque"
               className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-xs">
@@ -91,7 +91,7 @@ export function SuscripcionesPage() {
             </select>
           </label>
           <div>
-            <div className="text-xs font-mono text-white/50 mb-1">NIVELES</div>
+            <div className="text-xs font-mono text-txt-muted mb-1">NIVELES</div>
             <div className="flex gap-2">
               {(['rojo', 'amarillo', 'verde'] as const).map((n) => (
                 <label key={n} className={`cursor-pointer chip chip-${n === 'rojo' ? 'rojo' : n === 'amarillo' ? 'amarillo' : 'verde'} ${niveles.includes(n) ? '' : 'opacity-40'}`}>
@@ -111,14 +111,14 @@ export function SuscripcionesPage() {
               catch (e) { alert('Push: ' + (e as Error).message); }
             }}
             disabled={location.protocol !== 'https:' || location.hostname === 'localhost'}
-            className="w-full border border-accent-blue text-accent-blue py-2 rounded hover:bg-accent-blue/10 text-xs font-mono disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-full border border-pnn-blue text-pnn-blue py-2 rounded hover:bg-pnn-blue/10 text-xs font-mono disabled:opacity-30 disabled:cursor-not-allowed"
             title={location.protocol !== 'https:' ? 'Requiere certificado SSL válido' : ''}>
             🔔 NOTIFICACIONES PUSH
           </button>
           {location.protocol !== 'https:' && (
-            <div className="text-[10px] text-white/40">Push requiere certificado SSL válido</div>
+            <div className="text-[10px] text-txt-light">Push requiere certificado SSL válido</div>
           )}
-          <Link to="/dashboard" className="block text-xs text-white/50 hover:text-accent-blue">← Volver al dashboard</Link>
+          <Link to="/dashboard" className="block text-xs text-txt-muted hover:text-pnn-blue">← Volver al dashboard</Link>
         </aside>
 
         <section className="panel overflow-hidden flex flex-col">
@@ -127,14 +127,14 @@ export function SuscripcionesPage() {
           </div>
           <div className="overflow-y-auto flex-1 divide-y divide-border-subtle">
             {subs.data?.length === 0 && (
-              <div className="p-6 text-center text-white/40 text-xs">Sin suscripciones. Crea una en el panel izquierdo.</div>
+              <div className="p-6 text-center text-txt-light text-xs">Sin suscripciones. Crea una en el panel izquierdo.</div>
             )}
             {subs.data?.map((s) => (
               <div key={s.id} className="px-4 py-3 flex items-center gap-3">
                 <div className={`h-2 w-2 rounded-full ${s.activa ? 'bg-accent-green animate-pulse' : 'bg-white/20'}`} />
                 <div className="flex-1">
                   <div className="text-sm">{parqueNombre(s.parque_id)}</div>
-                  <div className="text-[10px] font-mono text-white/50">
+                  <div className="text-[10px] font-mono text-txt-muted">
                     {s.canal.toUpperCase()} → {s.destino ?? '(sin destino)'}
                   </div>
                 </div>

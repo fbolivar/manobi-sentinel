@@ -8,7 +8,7 @@ import type { Alerta, Parque } from '../types';
 interface StatRow { dia: string; nivel: string; total: string; }
 
 const NIVEL_COLOR: Record<string, string> = {
-  rojo: 'bg-accent-red/80', amarillo: 'bg-yellow-500/80', verde: 'bg-accent-green/80',
+  rojo: 'bg-red-500', amarillo: 'bg-amber-500', verde: 'bg-green-500',
 };
 
 function toCsv(rows: Alerta[]): string {
@@ -82,19 +82,19 @@ export function HistoricoPage() {
       <main className="flex-1 overflow-auto p-3 md:p-4 space-y-3 md:space-y-4 pb-20 md:pb-4">
         <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-3 items-end">
           <label className="block">
-            <span className="text-xs font-mono text-white/50">PARQUE</span>
+            <span className="text-xs font-mono text-txt-muted">PARQUE</span>
             <select value={parqueId} onChange={(e) => setParqueId(e.target.value)}
               title="Parque" aria-label="Parque"
-              className="mt-1 block bg-bg-surface2 border border-border-subtle rounded px-2 py-1.5 font-mono text-xs w-56">
+              className="mt-1 block input-field !py-1.5 !text-xs w-56">
               <option value="">— Todos —</option>
               {parques.data?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
             </select>
           </label>
           <label className="block">
-            <span className="text-xs font-mono text-white/50">NIVEL</span>
+            <span className="text-xs font-mono text-txt-muted">NIVEL</span>
             <select value={nivel} onChange={(e) => setNivel(e.target.value)}
               title="Nivel" aria-label="Nivel"
-              className="mt-1 block bg-bg-surface2 border border-border-subtle rounded px-2 py-1.5 font-mono text-xs w-32">
+              className="mt-1 block input-field !py-1.5 !text-xs w-32">
               <option value="">Todos</option>
               <option value="rojo">Rojo</option>
               <option value="amarillo">Amarillo</option>
@@ -102,25 +102,25 @@ export function HistoricoPage() {
             </select>
           </label>
           <label className="block">
-            <span className="text-xs font-mono text-white/50">DESDE</span>
+            <span className="text-xs font-mono text-txt-muted">DESDE</span>
             <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)}
-              className="mt-1 block bg-bg-surface2 border border-border-subtle rounded px-2 py-1.5 font-mono text-xs" />
+              className="mt-1 block input-field !py-1.5 !text-xs" />
           </label>
           <label className="block">
-            <span className="text-xs font-mono text-white/50">HASTA</span>
+            <span className="text-xs font-mono text-txt-muted">HASTA</span>
             <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)}
-              className="mt-1 block bg-bg-surface2 border border-border-subtle rounded px-2 py-1.5 font-mono text-xs" />
+              className="mt-1 block input-field !py-1.5 !text-xs" />
           </label>
           <button onClick={download} disabled={!alertas.data?.length}
-            className="px-4 py-1.5 border border-accent-blue text-accent-blue rounded hover:bg-accent-blue/10 text-xs font-mono disabled:opacity-30">
+            className="px-4 py-1.5 border border-pnn-blue text-pnn-blue rounded hover:bg-pnn-blue/10 text-xs font-mono disabled:opacity-30">
             CSV
           </button>
-          <Link to="/dashboard" className="text-xs text-white/50 hover:text-accent-blue ml-auto">← Dashboard</Link>
+          <Link to="/dashboard" className="text-xs text-txt-muted hover:text-pnn-blue ml-auto">← Dashboard</Link>
         </div>
 
         <section className="panel p-4">
           <h2 className="text-sm font-bold tracking-wider mb-3">ALERTAS POR DÍA</h2>
-          {days.length === 0 && <div className="text-xs text-white/40">Sin datos para el rango seleccionado.</div>}
+          {days.length === 0 && <div className="text-xs text-txt-light">Sin datos para el rango seleccionado.</div>}
           <div className="flex items-end gap-1 h-40 overflow-x-auto">
             {days.map(([day, levels]) => {
               const total = Object.values(levels).reduce((s, n) => s + n, 0);
@@ -132,7 +132,7 @@ export function HistoricoPage() {
                         style={{ height: `${(levels[n] / total) * 100}%`, minHeight: 2 }} />
                     ) : null)}
                   </div>
-                  <span className="text-[8px] font-mono text-white/40 mt-1 rotate-[-45deg] origin-top-left whitespace-nowrap">
+                  <span className="text-[8px] font-mono text-txt-light mt-1 rotate-[-45deg] origin-top-left whitespace-nowrap">
                     {day.slice(5)}
                   </span>
                 </div>
@@ -149,15 +149,15 @@ export function HistoricoPage() {
             <table className="w-full text-xs">
               <thead className="bg-bg-surface/50 sticky top-0">
                 <tr>
-                  <th className="px-3 py-2 text-left font-mono text-white/50">TIPO</th>
-                  <th className="px-3 py-2 text-left font-mono text-white/50">NIVEL</th>
-                  <th className="px-3 py-2 text-left font-mono text-white/50">PARQUE</th>
-                  <th className="px-3 py-2 text-left font-mono text-white/50">ESTADO</th>
-                  <th className="px-3 py-2 text-left font-mono text-white/50">FECHA</th>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted">TIPO</th>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted">NIVEL</th>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted">PARQUE</th>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted">ESTADO</th>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted">FECHA</th>
                 </tr>
               </thead>
               <tbody>
-                {alertas.isLoading && <tr><td colSpan={5} className="text-center py-6 text-white/40">Cargando…</td></tr>}
+                {alertas.isLoading && <tr><td colSpan={5} className="text-center py-6 text-txt-light">Cargando…</td></tr>}
                 {alertas.data?.map((a) => (
                   <tr key={a.id} className="border-b border-border-subtle/50 hover:bg-bg-surface2/50">
                     <td className="px-3 py-2">{a.tipo}</td>
@@ -167,8 +167,8 @@ export function HistoricoPage() {
                       </span>
                     </td>
                     <td className="px-3 py-2 truncate max-w-xs">{a.parque?.nombre ?? '—'}</td>
-                    <td className="px-3 py-2 font-mono text-white/60">{a.estado}</td>
-                    <td className="px-3 py-2 font-mono text-white/60">
+                    <td className="px-3 py-2 font-mono text-txt-muted">{a.estado}</td>
+                    <td className="px-3 py-2 font-mono text-txt-muted">
                       {new Date(a.fecha_inicio).toLocaleString('es-CO', { timeZone: 'America/Bogota' })}
                     </td>
                   </tr>
