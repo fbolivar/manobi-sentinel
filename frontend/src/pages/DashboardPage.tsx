@@ -1,16 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TopBar } from '../components/layout/TopBar';
 import { AlertsPanel } from '../components/alerts/AlertsPanel';
 import { MetricsPanel } from '../components/metrics/MetricsPanel';
 import { MapView } from '../components/map/MapView';
 import { BottomTimeline } from '../components/layout/BottomTimeline';
 import { useAlertsSocket } from '../hooks/useAlertsSocket';
+import { useMapStore } from '../stores/map.store';
 
 type MobileTab = 'mapa' | 'alertas' | 'metricas';
 
 export function DashboardPage() {
   useAlertsSocket();
   const [mobileTab, setMobileTab] = useState<MobileTab>('mapa');
+  const focusTs = useMapStore((s) => s.focusTs);
+
+  // Al hacer click en alerta en mobile → cambiar al tab mapa
+  useEffect(() => {
+    if (focusTs > 0) setMobileTab('mapa');
+  }, [focusTs]);
 
   return (
     <div className="h-screen flex flex-col">

@@ -15,6 +15,7 @@ import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
 import { Style, Fill, Stroke, Circle as CircleStyle } from 'ol/style';
 import { api } from '../../lib/api';
+import { useMapStore } from '../../stores/map.store';
 import type { EventoClimatico } from '../../types';
 
 const NIVEL_FILL = { alto: 'rgba(255,59,59,0.45)', medio: 'rgba(255,176,32,0.35)', bajo: 'rgba(0,255,136,0.25)' } as const;
@@ -176,6 +177,24 @@ export function MapView() {
     heatmapRef.current?.setVisible(layers.heatmap);
     hotspotsRef.current?.setVisible(layers.hotspots);
   }, [layers]);
+
+  // Focus en parque desde AlertsPanel
+  const focusParqueId = useMapStore((s) => s.focusParqueId);
+  const focusTs = useMapStore((s) => s.focusTs);
+  useEffect(() => {
+    if (!focusParqueId || !ready || !parquesRef.current || !mapRef.current) return;
+    const src = parquesRef.current.getSource();
+    if (!src) return;
+    const feature = src.getFeatures().find((f) => f.getId() === focusParqueId);
+    if (feature) {
+      const ext = feature.getGeometry()?.getExtent();
+      if (ext && isFinite(ext[0])) {
+        mapRef.current.getView().fit(ext, { padding: [60, 60, 60, 60], maxZoom: 10, duration: 600 });
+        const props = feature.getProperties();
+        setSelected({ nombre: props.nombre, region: props.region, nivel: props.nivel_riesgo });
+      }
+    }
+  }, [focusParqueId, focusTs, ready]);
 
   return (
     <div className="panel relative overflow-hidden h-full w-full min-h-[400px]">
