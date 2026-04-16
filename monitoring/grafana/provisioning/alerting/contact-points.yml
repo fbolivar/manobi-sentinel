@@ -1,0 +1,10 @@
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: ops-email
+    receivers:
+      - uid: ops-email-rcv
+        type: email
+        settings:
+          addresses: alertas@parques.gov.co
+          singleEmail: false

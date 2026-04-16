@@ -1,0 +1,32 @@
+# Override para desarrollo: expone puertos directos al host y monta código.
+services:
+  postgres:
+    ports: ["5432:5432"]
+  redis:
+    ports: ["6379:6379"]
+  minio:
+    ports: ["9000:9000", "9001:9001"]
+  api:
+    ports: ["3000:3000"]
+    volumes:
+      - ./backend/src:/app/src
+    environment:
+      NODE_ENV: development
+  ai-service:
+    ports: ["8000:8000"]
+    volumes:
+      - ./ai-service/app:/app/app
+  geoserver:
+    ports: ["8600:8080"]
+  pg_tileserv:
+    ports: ["7800:7800"]
+  pg_featureserv:
+    ports: ["7900:9000"]
+  tileserver-gl:
+    ports: ["8080:8080"]
+  prometheus:
+    ports: ["9090:9090"]
+  grafana:
+    ports: ["3001:3000"]
+  loki:
+    ports: ["3100:3100"]

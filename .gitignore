@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+*.dump
+*.bak
+*.log
+__pycache__/
+*.pyc
+*.joblib
+.DS_Store
+nginx/ssl/manobi.key
+nginx/ssl/manobi.crt
+nginx/ssl/*.bak
+grafana-data/
+prometheus-data/
+package-lock.json

@@ -1,0 +1,35 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: on-premise
+    project: manobi-sentinel
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs: [{ targets: ['localhost:9090'] }]
+
+  - job_name: api
+    metrics_path: /metrics
+    static_configs: [{ targets: ['api:3000'] }]
+
+  - job_name: ai-service
+    metrics_path: /metrics
+    static_configs: [{ targets: ['ai-service:8000'] }]
+
+  - job_name: postgres
+    static_configs: [{ targets: ['postgres-exporter:9187'] }]
+
+  - job_name: redis
+    static_configs: [{ targets: ['redis-exporter:9121'] }]
+
+  - job_name: node
+    static_configs: [{ targets: ['node-exporter:9100'] }]
+
+  - job_name: nginx
+    metrics_path: /metrics
+    static_configs: [{ targets: ['nginx:8081'] }]
+
+  - job_name: minio
+    metrics_path: /minio/v2/metrics/cluster
+    static_configs: [{ targets: ['minio:9000'] }]

@@ -1,0 +1,16 @@
+{
+  "options": {
+    "paths": {
+      "root": "/data",
+      "fonts": "fonts",
+      "sprites": "sprites",
+      "styles": "styles",
+      "mbtiles": "mbtiles"
+    },
+    "formatQuality": { "jpeg": 85, "webp": 90 }
+  },
+  "styles": {},
+  "data": {
+    "colombia": { "mbtiles": "colombia.mbtiles" }
+  }
+}
