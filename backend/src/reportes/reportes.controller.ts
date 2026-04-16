@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Param, ParseUUIDPipe, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, ParseUUIDPipe, Post, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsArray, IsDateString, IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
@@ -40,6 +40,10 @@ export class ReportesController {
     });
     stream.pipe(res);
   }
+
+  @Roles('admin')
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) { return this.svc.remove(id); }
 
   @Roles('admin', 'operador')
   @Post()

@@ -36,6 +36,17 @@ export class ReportesService {
     return r;
   }
 
+  async remove(id: string) {
+    const r = await this.findOne(id);
+    if (r.ruta_minio) {
+      const bucket = this.cfg.get<string>('minio.bucketReportes')!;
+      try { await this.minio.removeObject(bucket, r.ruta_minio); } catch {}
+    }
+    await this.repo.remove(r);
+    this.log.log(`Reporte eliminado: ${id}`);
+    return { ok: true };
+  }
+
   async presignedUrl(id: string): Promise<string> {
     const r = await this.findOne(id);
     if (!r.ruta_minio) throw new NotFoundException('Reporte sin archivo');

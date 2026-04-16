@@ -60,6 +60,11 @@ export function ReportesPage() {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  const eliminar = useMutation({
+    mutationFn: async (id: string) => (await api.delete(`/reportes/${id}`)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['reportes'] }),
+  });
+
   const toggle = (n: string) =>
     setNiveles((s) => (s.includes(n) ? s.filter((x) => x !== n) : [...s, n]));
 
@@ -70,12 +75,12 @@ export function ReportesPage() {
         <aside className="panel p-4 space-y-3 h-fit">
           <h2 className="text-sm font-bold tracking-wider">GENERAR REPORTE</h2>
           <label className="block">
-            <span className="text-xs font-mono text-txt-muted">TIPO</span>
+            <span className="text-xs font-mono text-white/50">TIPO</span>
             <input value={tipo} onChange={(e) => setTipo(e.target.value)}
               className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono" />
           </label>
           <label className="block">
-            <span className="text-xs font-mono text-txt-muted">FORMATO</span>
+            <span className="text-xs font-mono text-white/50">FORMATO</span>
             <select value={formato} onChange={(e) => setFormato(e.target.value as 'pdf' | 'xlsx' | 'csv')}
               title="Formato" aria-label="Formato"
               className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono">
@@ -83,7 +88,7 @@ export function ReportesPage() {
             </select>
           </label>
           <div>
-            <div className="text-xs font-mono text-txt-muted mb-1">NIVELES</div>
+            <div className="text-xs font-mono text-white/50 mb-1">NIVELES</div>
             <div className="flex gap-2">
               {(['rojo', 'amarillo', 'verde'] as const).map((n) => (
                 <label key={n} className={`cursor-pointer chip chip-${n === 'rojo' ? 'rojo' : n === 'amarillo' ? 'amarillo' : 'verde'} ${niveles.includes(n) ? '' : 'opacity-40'}`}>
@@ -95,56 +100,60 @@ export function ReportesPage() {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <label className="block">
-              <span className="text-xs font-mono text-txt-muted">DESDE</span>
+              <span className="text-xs font-mono text-white/50">DESDE</span>
               <input type="datetime-local" value={desde} onChange={(e) => setDesde(e.target.value)}
-                className="mt-1 w-full input-field !py-1.5 !text-xs" />
+                className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-2 py-1.5 font-mono text-xs" />
             </label>
             <label className="block">
-              <span className="text-xs font-mono text-txt-muted">HASTA</span>
+              <span className="text-xs font-mono text-white/50">HASTA</span>
               <input type="datetime-local" value={hasta} onChange={(e) => setHasta(e.target.value)}
-                className="mt-1 w-full input-field !py-1.5 !text-xs" />
+                className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-2 py-1.5 font-mono text-xs" />
             </label>
           </div>
           <button onClick={() => gen.mutate()} disabled={gen.isPending}
             className="w-full bg-accent-green text-bg font-bold py-2.5 rounded hover:brightness-110 disabled:opacity-50 transition">
             {gen.isPending ? 'Generando…' : 'GENERAR'}
           </button>
-          {msg && <div className="text-xs text-pnn-blue">{msg}</div>}
-          <Link to="/dashboard" className="block text-xs text-txt-muted hover:text-pnn-blue">← Volver al dashboard</Link>
+          {msg && <div className="text-xs text-accent-blue">{msg}</div>}
+          <Link to="/dashboard" className="block text-xs text-white/50 hover:text-accent-blue">← Volver al dashboard</Link>
         </aside>
 
         <section className="panel overflow-hidden flex flex-col">
           <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
             <h2 className="text-sm font-bold tracking-wider">REPORTES GENERADOS</h2>
-            <span className="text-xs font-mono text-txt-muted">{data?.length ?? 0} total</span>
+            <span className="text-xs font-mono text-white/50">{data?.length ?? 0} total</span>
           </div>
           <div className="overflow-y-auto flex-1">
             <table className="w-full text-xs">
               <thead className="bg-bg-surface/50 sticky top-0">
                 <tr>
-                  <th className="px-3 py-2 text-left font-mono text-txt-muted">TIPO</th>
-                  <th className="px-3 py-2 text-left font-mono text-txt-muted">FORMATO</th>
-                  <th className="px-3 py-2 text-left font-mono text-txt-muted">FECHA</th>
-                  <th className="px-3 py-2 text-left font-mono text-txt-muted">ARCHIVO</th>
+                  <th className="px-3 py-2 text-left font-mono text-white/50">TIPO</th>
+                  <th className="px-3 py-2 text-left font-mono text-white/50">FORMATO</th>
+                  <th className="px-3 py-2 text-left font-mono text-white/50">FECHA</th>
+                  <th className="px-3 py-2 text-left font-mono text-white/50">ARCHIVO</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
               <tbody>
-                {isLoading && <tr><td colSpan={5} className="text-center py-6 text-txt-light">Cargando…</td></tr>}
-                {data?.length === 0 && <tr><td colSpan={5} className="text-center py-6 text-txt-light">Sin reportes aún</td></tr>}
+                {isLoading && <tr><td colSpan={5} className="text-center py-6 text-white/40">Cargando…</td></tr>}
+                {data?.length === 0 && <tr><td colSpan={5} className="text-center py-6 text-white/40">Sin reportes aún</td></tr>}
                 {data?.map((r) => (
                   <tr key={r.id} className="border-b border-border-subtle/50 hover:bg-bg-surface2/50">
                     <td className="px-3 py-2">{r.tipo}</td>
                     <td className="px-3 py-2"><span className="chip chip-verde">{r.formato.toUpperCase()}</span></td>
-                    <td className="px-3 py-2 font-mono text-txt-muted">{new Date(r.creado_en).toLocaleString('es-CO', { timeZone: 'America/Bogota' })}</td>
-                    <td className="px-3 py-2 font-mono text-txt-light truncate max-w-xs">{r.ruta_minio ?? '—'}</td>
-                    <td className="px-3 py-2 text-right">
+                    <td className="px-3 py-2 font-mono text-white/60">{new Date(r.creado_en).toLocaleString('es-CO', { timeZone: 'America/Bogota' })}</td>
+                    <td className="px-3 py-2 font-mono text-white/40 truncate max-w-xs">{r.ruta_minio ?? '—'}</td>
+                    <td className="px-3 py-2 text-right flex gap-1 justify-end">
                       {r.ruta_minio && (
-                        <button onClick={() => download(r)}
-                          className="text-xs px-3 py-1 border border-pnn-blue text-pnn-blue rounded hover:bg-pnn-blue/10">
+                        <button type="button" onClick={() => download(r)}
+                          className="text-xs px-3 py-1 border border-pnn-blue text-pnn-blue rounded-lg hover:bg-pnn-blue/5">
                           Descargar
                         </button>
                       )}
+                      <button type="button" onClick={() => confirm('¿Eliminar este reporte?') && eliminar.mutate(r.id)}
+                        className="text-xs px-3 py-1 border border-accent-red/50 text-accent-red rounded-lg hover:bg-red-50">
+                        Eliminar
+                      </button>
                     </td>
                   </tr>
                 ))}
