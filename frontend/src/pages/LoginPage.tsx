@@ -32,7 +32,7 @@ export function LoginPage() {
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M30 5 L55 50 L5 50 Z\' fill=\'none\' stroke=\'white\' stroke-width=\'0.5\'/%3E%3C/svg%3E")', backgroundSize: '60px' }} />
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur grid place-items-center text-2xl font-bold">M</div>
+            <img src="/logo.png" alt="Manobi Sentinel" className="h-14 w-14 rounded-xl object-cover shadow-lg" />
             <div>
               <div className="text-xl font-bold tracking-wide">Manobi Sentinel</div>
               <div className="text-sm text-white/70">Sistema de Alerta Temprana</div>
@@ -60,7 +60,7 @@ export function LoginPage() {
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-4">
             <div className="inline-flex items-center gap-3 mb-3">
-              <div className="h-11 w-11 rounded-xl bg-pnn-green grid place-items-center text-white text-xl font-bold">M</div>
+              <img src="/logo.png" alt="Manobi Sentinel" className="h-11 w-11 rounded-xl object-cover" />
               <div className="text-left">
                 <div className="text-lg font-bold text-txt">Manobi Sentinel</div>
                 <div className="text-xs text-txt-muted">PNN Colombia</div>

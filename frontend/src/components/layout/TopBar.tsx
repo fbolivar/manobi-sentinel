@@ -35,7 +35,7 @@ export function TopBar() {
     <header className="h-12 md:h-14 px-3 md:px-5 flex items-center justify-between border-b border-border-subtle bg-bg-surface shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-2 md:gap-3 min-w-0">
-        <div className="h-8 w-8 rounded-lg bg-pnn-green grid place-items-center font-bold text-white text-sm">M</div>
+        <img src="/logo.png" alt="Manobi" className="h-8 w-8 rounded-lg object-cover" />
         <div className="hidden sm:block">
           <div className="text-sm font-bold text-txt tracking-wide">MANOBI SENTINEL</div>
           <div className="text-[10px] text-txt-light">PNN Colombia</div>
