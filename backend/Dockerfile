@@ -9,6 +9,7 @@ COPY . .
 ARG SKIP_TESTS=0
 RUN if [ "$SKIP_TESTS" = "1" ]; then echo "Skipping tests"; else npm test -- --ci --passWithNoTests; fi
 RUN npm run build && npm prune --omit=dev
+RUN cp src/reportes/generators/logo-base64.txt dist/reportes/generators/ 2>/dev/null || true
 
 # ---------- Stage 2: runtime ----------
 FROM node:20-bookworm-slim AS runtime
