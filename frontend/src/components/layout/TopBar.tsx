@@ -41,7 +41,7 @@ export function TopBar() {
             <div className="text-[10px] font-mono text-white/50">PNN COLOMBIA · ALERTA TEMPRANA</div>
           </div>
         </div>
-        <nav className="flex items-center gap-1 ml-4">
+        <nav className="flex items-center gap-1 ml-4 overflow-x-auto scrollbar-hide">
           <NavLink to="/dashboard" className={linkCls}>Dashboard</NavLink>
           <NavLink to="/historico" className={linkCls}>Histórico</NavLink>
           <NavLink to="/reportes" className={linkCls}>Reportes</NavLink>
@@ -51,7 +51,7 @@ export function TopBar() {
         </nav>
       </div>
 
-      <div className="flex items-center gap-4 text-xs font-mono">
+      <div className="hidden md:flex items-center gap-4 text-xs font-mono">
         <span className="flex items-center gap-1.5"><Dot ok={apiHealth.isSuccess} /> API</span>
         <span className="flex items-center gap-1.5"><Dot ok={apiHealth.isSuccess} /> DB</span>
         <span className="flex items-center gap-1.5"><Dot ok={apiHealth.isSuccess} /> IA</span>

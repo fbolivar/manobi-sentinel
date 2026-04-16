@@ -1,0 +1,129 @@
+# ---- HTTP → HTTPS ----
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+
+    location /.well-known/acme-challenge/ { root /var/www/certbot; }
+    location / { return 301 https://$host$request_uri; }
+}
+
+# ---- HTTPS principal ----
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name _;
+
+    ssl_certificate     /etc/nginx/ssl/manobi.crt;
+    ssl_certificate_key /etc/nginx/ssl/manobi.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache   shared:SSL:20m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    include /etc/nginx/conf.d/security-headers.conf;
+
+    # ---- Frontend (React SPA) ----
+    location / {
+        proxy_pass http://frontend_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # ---- API NestJS ----
+    location /api/ {
+        limit_req zone=api_general burst=50 nodelay;
+        proxy_pass http://api_backend/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # ---- Login endpoint con rate limit estricto ----
+    location = /api/auth/login {
+        limit_req zone=auth_login burst=3 nodelay;
+        proxy_pass http://api_backend/auth/login;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # ---- WebSocket (Socket.io) ----
+    location /socket.io/ {
+        proxy_pass http://api_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 3600s;
+    }
+
+    # ---- GeoServer (WMS/WFS) ----
+    location /geoserver/ {
+        proxy_pass http://geoserver_backend/geoserver/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # ---- pg_tileserv (MVT) ----
+    location /tileserv/ {
+        proxy_pass http://tileserv_backend/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # ---- pg_featureserv (GeoJSON) ----
+    location /featureserv/ {
+        proxy_pass http://featureserv_backend/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # ---- TileServer GL (tiles base) ----
+    location /tiles/ {
+        proxy_pass http://tileservergl_backend/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        expires 7d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # ---- Grafana (bajo /grafana) ----
+    location /grafana/ {
+        proxy_pass http://grafana_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Grafana live (WebSocket)
+    location /grafana/api/live/ {
+        proxy_pass http://grafana_backend/api/live/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+
+    # ---- MinIO (descarga firmada de reportes) ----
+    location /minio/ {
+        proxy_pass http://minio_backend/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_buffering off;
+        client_max_body_size 1000m;
+    }
+}
