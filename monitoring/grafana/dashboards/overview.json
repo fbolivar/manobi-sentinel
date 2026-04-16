@@ -56,17 +56,17 @@
       "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
       "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "purple" }, "unit": "short" } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "value" },
-      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM eventos_climaticos WHERE fecha >= NOW() - INTERVAL '1 hour' AND fuente LIKE 'IDEAM-%' AND fuente NOT LIKE 'IDEAM-SIM';" }]
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM eventos_climaticos WHERE creado_en >= NOW() - INTERVAL '1 hour' AND fuente LIKE 'IDEAM-%' AND fuente NOT LIKE 'IDEAM-SIM';" }]
     },
     {
       "id": 6,
       "type": "stat",
-      "title": "Parques con estación ≤150km",
+      "title": "Parques con contexto activo",
       "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
       "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red" }, { "color": "yellow", "value": 20 }, { "color": "green", "value": 40 }] }, "unit": "short" } },
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "value" },
-      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(DISTINCT p.id) AS value FROM parques p JOIN eventos_climaticos e ON ST_DWithin(p.geometria::geography, e.ubicacion::geography, 150000) WHERE e.fecha >= NOW() - INTERVAL '1 hour' AND e.fuente LIKE 'IDEAM-%' AND e.fuente NOT LIKE 'IDEAM-SIM';" }]
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM contexto_parque_cache WHERE updated_at >= NOW() - INTERVAL '30 minutes';" }]
     },
     {
       "id": 10,
