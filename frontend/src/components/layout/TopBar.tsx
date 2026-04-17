@@ -82,8 +82,16 @@ export function TopBar() {
           </div>
         )}
         <button type="button" onClick={logout}
-          className="h-8 w-8 rounded-lg border border-border-subtle hover:bg-bg-surface2 text-txt-muted grid place-items-center text-sm transition touch-target"
-          title="Cerrar sesión" aria-label="Cerrar sesión">⎋</button>
+          className="group h-8 w-8 rounded-lg border border-border-subtle hover:border-accent-red/60 hover:bg-accent-red/10 text-txt-muted hover:text-accent-red grid place-items-center transition touch-target"
+          title="Cerrar sesión" aria-label="Cerrar sesión">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className="transition-transform group-hover:translate-x-0.5">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
+          </svg>
+        </button>
       </div>
     </header>
   );
