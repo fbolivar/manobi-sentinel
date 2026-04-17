@@ -22,6 +22,7 @@ import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { ReportesModule } from './reportes/reportes.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { HotspotsModule } from './hotspots/hotspots.module';
+import { BackupsModule } from './backups/backups.module';
 import { Usuario } from './common/entities/usuario.entity';
 import { SeedAdminService } from './bootstrap/seed-admin';
 import { Public } from './common/decorators/public.decorator';
@@ -52,6 +53,7 @@ class HealthController {
     ReportesModule,
     MetricsModule,
     HotspotsModule,
+    BackupsModule,
   ],
   controllers: [HealthController],
   providers: [

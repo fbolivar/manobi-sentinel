@@ -51,6 +51,7 @@ export function TopBar() {
         <NavLink to="/suscripciones" className={linkCls}>Suscripciones</NavLink>
         <NavLink to="/reglas" className={linkCls}>Reglas</NavLink>
         {user?.rol === 'admin' && <NavLink to="/usuarios" className={linkCls}>Usuarios</NavLink>}
+        {user?.rol === 'admin' && <NavLink to="/backups" className={linkCls}>Respaldos</NavLink>}
       </nav>
 
       {/* Status — desktop */}

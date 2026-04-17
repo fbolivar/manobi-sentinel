@@ -14,6 +14,7 @@ const SuscripcionesPage = lazy(() => import('./pages/SuscripcionesPage').then((m
 const ReglasPage = lazy(() => import('./pages/ReglasPage').then((m) => ({ default: m.ReglasPage })));
 const UsuariosPage = lazy(() => import('./pages/UsuariosPage').then((m) => ({ default: m.UsuariosPage })));
 const HistoricoPage = lazy(() => import('./pages/HistoricoPage').then((m) => ({ default: m.HistoricoPage })));
+const BackupsPage = lazy(() => import('./pages/BackupsPage').then((m) => ({ default: m.BackupsPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -46,6 +47,7 @@ export function App() {
             <Route path="/reglas" element={<Protected><ReglasPage /></Protected>} />
             <Route path="/usuarios" element={<Protected><UsuariosPage /></Protected>} />
             <Route path="/historico" element={<Protected><HistoricoPage /></Protected>} />
+            <Route path="/backups" element={<Protected><BackupsPage /></Protected>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>
