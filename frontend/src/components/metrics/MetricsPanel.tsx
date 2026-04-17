@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import type { Alerta } from '../../types';
+import type { Alerta, Parque } from '../../types';
 
 interface SummaryRow { nivel: 'rojo' | 'amarillo' | 'verde'; total: string }
 interface Prediccion {
@@ -28,6 +28,14 @@ export function MetricsPanel() {
     queryFn: async () => (await api.get('/predicciones/latest')).data,
     refetchInterval: 60_000,
   });
+  // Necesario para resolver parque_id -> nombre en las filas de predicciones.
+  const parques = useQuery<Parque[]>({
+    queryKey: ['parques-list'],
+    queryFn: async () => (await api.get('/parques')).data,
+    staleTime: 5 * 60_000,
+  });
+  const nombreParque = (id: string) =>
+    parques.data?.find((p) => p.id === id)?.nombre ?? '—';
 
   const count = (n: string) =>
     Number(summary.data?.find((r) => r.nivel === n)?.total ?? 0);
@@ -95,28 +103,50 @@ export function MetricsPanel() {
 
         {/* Predicciones IA */}
         <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between">
             <div className="text-xs font-bold text-pnn-blue uppercase tracking-wider">IA · Predicciones</div>
             {topPreds[0] && (
-              <span className="text-[10px] text-txt-light bg-white px-1.5 py-0.5 rounded">{topPreds[0].modelo_version}</span>
+              <span className="text-[10px] text-txt-light bg-white px-1.5 py-0.5 rounded cursor-help"
+                title={`Modelo scikit-learn versión ${topPreds[0].modelo_version}. Actualizado cada 15 min por el motor de alertas.`}>
+                modelo {topPreds[0].modelo_version}
+              </span>
             )}
+          </div>
+          <div className="text-[10px] text-txt-muted mt-0.5 mb-3 leading-snug">
+            Probabilidad estimada de incendio o inundación por parque en las próximas 24 h · top 5 de riesgo actual
           </div>
           {topPreds.length === 0 && (
             <div className="text-xs text-txt-muted">Esperando primer ciclo…</div>
           )}
-          <div className="space-y-2.5">
-            {topPreds.map((p) => (
-              <div key={p.id} className="flex items-center gap-2">
-                <span className="text-[11px] font-bold uppercase text-txt w-[72px] shrink-0">{p.tipo}</span>
-                <div className="flex-1 h-2.5 bg-white rounded-full overflow-hidden border border-gray-200">
-                  <div className={`h-full rounded-full transition-all ${barColor(p.prob)}`}
-                    style={{ width: `${Math.min(p.prob, 100)}%` }} />
+          <div className="space-y-2">
+            {topPreds.map((p) => {
+              const isFire = p.tipo === 'incendio';
+              const nombre = nombreParque(p.parque_id);
+              const fechaTxt = new Date(p.fecha).toLocaleString('es-CO', { timeZone: 'America/Bogota' });
+              return (
+                <div key={p.id}
+                  className="flex items-center gap-2 text-xs"
+                  title={`${isFire ? 'Incendio' : 'Inundación'} · ${nombre}\nProbabilidad: ${p.prob.toFixed(1)}%\nCalculada: ${fechaTxt}`}>
+                  <span className={`text-base shrink-0 ${isFire ? 'text-orange-500' : 'text-blue-500'}`}
+                    aria-label={isFire ? 'Incendio' : 'Inundación'}>
+                    {isFire ? '🔥' : '💧'}
+                  </span>
+                  <span className="text-txt truncate flex-1 min-w-0">{nombre}</span>
+                  <div className="w-20 md:w-24 h-2 bg-white rounded-full overflow-hidden border border-gray-200 shrink-0">
+                    <div className={`h-full rounded-full transition-all ${barColor(p.prob)}`}
+                      style={{ width: `${Math.min(p.prob, 100)}%` }} />
+                  </div>
+                  <span className={`font-mono font-bold w-11 text-right shrink-0 ${probColor(p.prob)}`}>
+                    {p.prob.toFixed(0)}%
+                  </span>
                 </div>
-                <span className={`font-mono font-bold text-sm w-11 text-right ${probColor(p.prob)}`}>
-                  {p.prob.toFixed(0)}%
-                </span>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-3 text-[10px] text-txt-light mt-3 pt-2 border-t border-blue-200/60">
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500"/>&gt;70% alto</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500"/>40-70% medio</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500"/>&lt;40% bajo</span>
           </div>
         </div>
       </div>
