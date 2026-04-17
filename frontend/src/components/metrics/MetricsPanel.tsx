@@ -68,7 +68,7 @@ export function MetricsPanel() {
       <div className="px-4 py-3 border-b border-border-subtle">
         <h2 className="text-sm font-semibold text-txt tracking-wide">Métricas en tiempo real</h2>
       </div>
-      <div className="p-4 space-y-4 overflow-y-auto">
+      <div className="p-4 pb-6 space-y-4 overflow-y-auto">
         {/* Contadores por nivel */}
         <div className="grid grid-cols-3 gap-2">
           {(['rojo', 'amarillo', 'verde'] as const).map((n) => (
@@ -113,7 +113,12 @@ export function MetricsPanel() {
             )}
           </div>
           <div className="text-[10px] text-txt-muted mt-0.5 mb-3 leading-snug">
-            Probabilidad estimada de incendio o inundación por parque en las próximas 24 h · top 5 de riesgo actual
+            Top 5 parques por probabilidad estimada de incendio o inundación · próximas 24 h.
+            <span className="block mt-0.5">
+              <span className="text-green-600">bajo &lt;40%</span> ·{' '}
+              <span className="text-amber-600">medio 40–70%</span> ·{' '}
+              <span className="text-red-600">alto &gt;70%</span>
+            </span>
           </div>
           {topPreds.length === 0 && (
             <div className="text-xs text-txt-muted">Esperando primer ciclo…</div>
@@ -144,11 +149,6 @@ export function MetricsPanel() {
                 </div>
               );
             })}
-          </div>
-          <div className="flex items-center justify-between text-[9px] text-txt-light mt-3 pt-2 border-t border-blue-200/60">
-            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-red-500"/>alto &gt;70</span>
-            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-500"/>medio 40-70</span>
-            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-green-500"/>bajo &lt;40</span>
           </div>
         </div>
       </div>
