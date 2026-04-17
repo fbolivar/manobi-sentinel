@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { EventoClimatico } from '../common/entities/evento-climatico.entity';
@@ -6,10 +8,36 @@ import { CreateEventoDto } from './dto/evento.dto';
 
 @Injectable()
 export class EventosService {
+  private readonly log = new Logger('EventosRetention');
+
   constructor(
     @InjectRepository(EventoClimatico) private readonly repo: Repository<EventoClimatico>,
     private readonly ds: DataSource,
+    private readonly cfg: ConfigService,
   ) {}
+
+  /** Limpieza diaria 3:30 AM hora Colombia: elimina eventos con fecha > retention_days.
+   *  Default 30 días; configurable vía EVENTOS_RETENTION_DAYS.
+   *  Usa VACUUM ANALYZE al final para recuperar espacio y actualizar stats del planner. */
+  @Cron('0 30 3 * * *', { name: 'eventos-retention', timeZone: 'America/Bogota' })
+  async limpiar() {
+    const dias = Number(this.cfg.get<string>('EVENTOS_RETENTION_DAYS') ?? 30);
+    try {
+      const r = await this.ds.query<{ count: string }[]>(
+        `WITH del AS (DELETE FROM eventos_climaticos WHERE fecha < NOW() - ($1 || ' days')::interval RETURNING 1)
+         SELECT COUNT(*)::text AS count FROM del`,
+        [dias],
+      );
+      const borrados = Number(r[0]?.count ?? 0);
+      this.log.log(`Retención: ${borrados} eventos > ${dias}d eliminados`);
+      if (borrados > 0) {
+        await this.ds.query('VACUUM ANALYZE eventos_climaticos');
+        this.log.log('VACUUM ANALYZE completado');
+      }
+    } catch (e) {
+      this.log.error(`Retención falló: ${(e as Error).message}`);
+    }
+  }
 
   findRecent(hours = 24, tipo?: string, limit = 500) {
     const qb = this.repo.createQueryBuilder('e')

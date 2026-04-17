@@ -44,7 +44,8 @@ export class AlertEngineService implements OnApplicationBootstrap {
 
     this.log.log(`Evaluando ${reglas.length} reglas × ${parques.length} parques`);
     const started = Date.now();
-    let generadas = 0;
+    let nuevas = 0;
+    let dedup = 0;
     let status: 'ok' | 'error' = 'ok';
 
     try {
@@ -52,7 +53,7 @@ export class AlertEngineService implements OnApplicationBootstrap {
       for (let i = 0; i < parques.length; i += BATCH) {
         const slice = parques.slice(i, i + BATCH);
         const results = await Promise.all(slice.map((p) => this.evaluarParque(p, reglas)));
-        generadas += results.reduce((s, n) => s + n, 0);
+        for (const r of results) { nuevas += r.nuevas; dedup += r.dedup; }
       }
     } catch (e) {
       status = 'error';
@@ -61,12 +62,13 @@ export class AlertEngineService implements OnApplicationBootstrap {
       const secs = (Date.now() - started) / 1000;
       this.metrics.engineCycles.inc({ status });
       this.metrics.engineDuration.observe(secs);
-      this.log.log(`Evaluación terminada en ${Math.round(secs)}s. Alertas nuevas/dedup: ${generadas}`);
+      this.log.log(`Evaluación terminada en ${Math.round(secs)}s. Nuevas: ${nuevas}, dedup: ${dedup}`);
     }
   }
 
-  private async evaluarParque(parque: Parque, reglas: ReglaAlerta[]): Promise<number> {
-    let generadas = 0;
+  private async evaluarParque(parque: Parque, reglas: ReglaAlerta[]): Promise<{ nuevas: number; dedup: number }> {
+    let nuevas = 0;
+    let dedup = 0;
     const base = await this.eventos.contextoPorParque(parque.id);
 
     const [predIncendio, predInundacion] = await Promise.all([
@@ -101,19 +103,23 @@ export class AlertEngineService implements OnApplicationBootstrap {
       try {
         if (!evaluar(regla.condicion, ctx)) continue;
         const nivel = regla.nivel_resultante ?? 'amarillo';
-        await this.alertas.create({
+        const res = await this.alertas.createWithDedup({
           tipo: regla.nombre ?? 'alerta',
           nivel,
           descripcion: regla.accion ?? null as unknown as string,
           fecha_inicio: new Date().toISOString(),
           parque_id: parque.id,
         }, 'motor_reglas');
-        this.metrics.alertsGenerated.inc({ nivel });
-        generadas++;
+        if (res.nueva) {
+          this.metrics.alertsGenerated.inc({ nivel });
+          nuevas++;
+        } else {
+          dedup++;
+        }
       } catch (e) {
         this.log.error(`Regla ${regla.id} parque ${parque.id}: ${(e as Error).message}`);
       }
     }
-    return generadas;
+    return { nuevas, dedup };
   }
 }

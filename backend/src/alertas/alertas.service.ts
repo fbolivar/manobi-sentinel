@@ -60,12 +60,19 @@ export class AlertasService {
   }
 
   async create(dto: CreateAlertaDto, generadaPor: 'motor_reglas' | 'ia' | 'manual') {
+    return (await this.createWithDedup(dto, generadaPor)).alerta;
+  }
+
+  async createWithDedup(
+    dto: CreateAlertaDto,
+    generadaPor: 'motor_reglas' | 'ia' | 'manual',
+  ): Promise<{ alerta: Alerta; nueva: boolean }> {
     const existing = dto.parque_id
       ? await this.repo.findOne({
           where: { parque_id: dto.parque_id, tipo: dto.tipo, estado: 'activa' },
         })
       : null;
-    if (existing) return existing;
+    if (existing) return { alerta: existing, nueva: false };
 
     const alerta = this.repo.create({
       ...dto,
@@ -76,7 +83,7 @@ export class AlertasService {
     });
     const saved = await this.repo.save(alerta);
     await this.publish(saved);
-    return saved;
+    return { alerta: saved, nueva: true };
   }
 
   async cerrar(id: string, dto: CerrarAlertaDto) {

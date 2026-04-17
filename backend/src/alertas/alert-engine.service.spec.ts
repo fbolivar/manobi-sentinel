@@ -27,7 +27,10 @@ describe('AlertEngineService', () => {
       predictIncendio: jest.fn().mockResolvedValue({ probabilidad: opts.predIncendio ?? 0 }),
       predictInundacion: jest.fn().mockResolvedValue({ probabilidad: opts.predInundacion ?? 0 }),
     };
-    const alertas = { create: jest.fn().mockResolvedValue({ id: 'a1' }) };
+    const alertas = {
+      create: jest.fn().mockResolvedValue({ id: 'a1' }),
+      createWithDedup: jest.fn().mockResolvedValue({ alerta: { id: 'a1' }, nueva: true }),
+    };
     const metrics = {
       engineCycles: { inc: jest.fn() },
       engineDuration: { observe: jest.fn() },
@@ -54,7 +57,7 @@ describe('AlertEngineService', () => {
     const { svc, alertas, eventos } = await build({ reglas: [], parques: [{ id: 'p1' }] });
     await svc.run();
     expect(eventos.contextoPorParque).not.toHaveBeenCalled();
-    expect(alertas.create).not.toHaveBeenCalled();
+    expect(alertas.createWithDedup).not.toHaveBeenCalled();
   });
 
   it('short-circuit si no hay parques', async () => {
@@ -62,7 +65,7 @@ describe('AlertEngineService', () => {
     const { svc, alertas, eventos } = await build({ reglas, parques: [] });
     await svc.run();
     expect(eventos.contextoPorParque).not.toHaveBeenCalled();
-    expect(alertas.create).not.toHaveBeenCalled();
+    expect(alertas.createWithDedup).not.toHaveBeenCalled();
   });
 
   it('crea alerta cuando regla rojo hace match', async () => {
@@ -79,8 +82,8 @@ describe('AlertEngineService', () => {
 
     expect(predAI.predictIncendio).toHaveBeenCalledTimes(1);
     expect(predAI.predictInundacion).toHaveBeenCalledTimes(1);
-    expect(alertas.create).toHaveBeenCalledTimes(1);
-    expect(alertas.create).toHaveBeenCalledWith(
+    expect(alertas.createWithDedup).toHaveBeenCalledTimes(1);
+    expect(alertas.createWithDedup).toHaveBeenCalledWith(
       expect.objectContaining({ tipo: 'Incendio crítico', nivel: 'rojo', descripcion: 'Evacuar zona', parque_id: 'pq1' }),
       'motor_reglas',
     );
@@ -96,7 +99,7 @@ describe('AlertEngineService', () => {
       ctx: { temperatura_c: 20 },
     });
     await svc.run();
-    expect(alertas.create).not.toHaveBeenCalled();
+    expect(alertas.createWithDedup).not.toHaveBeenCalled();
   });
 
   it('usa predicción IA máxima como prediccion_ia.probabilidad', async () => {
@@ -109,7 +112,7 @@ describe('AlertEngineService', () => {
       predIncendio: 30, predInundacion: 70,
     });
     await svc.run();
-    expect(alertas.create).toHaveBeenCalledTimes(1);
+    expect(alertas.createWithDedup).toHaveBeenCalledTimes(1);
   });
 
   it('continúa con otras reglas si una falla', async () => {
@@ -120,11 +123,11 @@ describe('AlertEngineService', () => {
         condicion: { operador: 'AND' as const, condiciones: [{ campo: 't', comparador: '>' as const, valor: 0 }] } },
     ];
     const { svc, alertas } = await build({ reglas, parques: [{ id: 'pq1' }], ctx: { t: 5 } });
-    alertas.create
+    alertas.createWithDedup
       .mockRejectedValueOnce(new Error('DB down'))
-      .mockResolvedValueOnce({ id: 'a2' });
+      .mockResolvedValueOnce({ alerta: { id: 'a2' }, nueva: true });
 
     await svc.run();
-    expect(alertas.create).toHaveBeenCalledTimes(2);
+    expect(alertas.createWithDedup).toHaveBeenCalledTimes(2);
   });
 });
