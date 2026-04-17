@@ -4,7 +4,7 @@ import { Request } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
-import { LoginDto, LogoutDto, RefreshDto } from './dto/login.dto';
+import { LoginDto, LogoutDto, RefreshDto, ResendOtpDto, VerifyOtpDto } from './dto/login.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -16,6 +16,24 @@ export class AuthController {
   @HttpCode(200)
   login(@Body() dto: LoginDto, @Req() req: Request) {
     return this.auth.login(dto.email, dto.password, {
+      ip: req.ip, ua: req.headers['user-agent'] as string | undefined,
+    });
+  }
+
+  @Public()
+  @Post('verify-otp')
+  @HttpCode(200)
+  verifyOtp(@Body() dto: VerifyOtpDto, @Req() req: Request) {
+    return this.auth.verifyOtp(dto.challenge_id, dto.code, {
+      ip: req.ip, ua: req.headers['user-agent'] as string | undefined,
+    });
+  }
+
+  @Public()
+  @Post('resend-otp')
+  @HttpCode(200)
+  resendOtp(@Body() dto: ResendOtpDto, @Req() req: Request) {
+    return this.auth.resendOtp(dto.challenge_id, {
       ip: req.ip, ua: req.headers['user-agent'] as string | undefined,
     });
   }
