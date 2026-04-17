@@ -118,35 +118,37 @@ export function MetricsPanel() {
           {topPreds.length === 0 && (
             <div className="text-xs text-txt-muted">Esperando primer ciclo…</div>
           )}
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {topPreds.map((p) => {
               const isFire = p.tipo === 'incendio';
               const nombre = nombreParque(p.parque_id);
               const fechaTxt = new Date(p.fecha).toLocaleString('es-CO', { timeZone: 'America/Bogota' });
               return (
                 <div key={p.id}
-                  className="flex items-center gap-2 text-xs"
+                  className="text-xs"
                   title={`${isFire ? 'Incendio' : 'Inundación'} · ${nombre}\nProbabilidad: ${p.prob.toFixed(1)}%\nCalculada: ${fechaTxt}`}>
-                  <span className={`text-base shrink-0 ${isFire ? 'text-orange-500' : 'text-blue-500'}`}
-                    aria-label={isFire ? 'Incendio' : 'Inundación'}>
-                    {isFire ? '🔥' : '💧'}
-                  </span>
-                  <span className="text-txt truncate flex-1 min-w-0">{nombre}</span>
-                  <div className="w-20 md:w-24 h-2 bg-white rounded-full overflow-hidden border border-gray-200 shrink-0">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className={`text-sm shrink-0 ${isFire ? 'text-orange-500' : 'text-blue-500'}`}
+                      aria-label={isFire ? 'Incendio' : 'Inundación'}>
+                      {isFire ? '🔥' : '💧'}
+                    </span>
+                    <span className="text-txt truncate flex-1 min-w-0">{nombre}</span>
+                    <span className={`font-mono font-bold shrink-0 text-[11px] ${probColor(p.prob)}`}>
+                      {p.prob.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-white rounded-full overflow-hidden border border-gray-200">
                     <div className={`h-full rounded-full transition-all ${barColor(p.prob)}`}
                       style={{ width: `${Math.min(p.prob, 100)}%` }} />
                   </div>
-                  <span className={`font-mono font-bold w-11 text-right shrink-0 ${probColor(p.prob)}`}>
-                    {p.prob.toFixed(0)}%
-                  </span>
                 </div>
               );
             })}
           </div>
-          <div className="flex items-center gap-3 text-[10px] text-txt-light mt-3 pt-2 border-t border-blue-200/60">
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500"/>&gt;70% alto</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500"/>40-70% medio</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500"/>&lt;40% bajo</span>
+          <div className="flex items-center justify-between text-[9px] text-txt-light mt-3 pt-2 border-t border-blue-200/60">
+            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-red-500"/>alto &gt;70</span>
+            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-500"/>medio 40-70</span>
+            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-green-500"/>bajo &lt;40</span>
           </div>
         </div>
       </div>
