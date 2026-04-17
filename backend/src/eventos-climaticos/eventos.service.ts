@@ -11,10 +11,11 @@ export class EventosService {
     private readonly ds: DataSource,
   ) {}
 
-  findRecent(hours = 24, tipo?: string) {
+  findRecent(hours = 24, tipo?: string, limit = 500) {
     const qb = this.repo.createQueryBuilder('e')
       .where(`e.fecha >= NOW() - (:hours || ' hours')::interval`, { hours })
-      .orderBy('e.fecha', 'DESC');
+      .orderBy('e.fecha', 'DESC')
+      .limit(Math.min(Math.max(limit, 1), 5000));
     if (tipo) qb.andWhere('e.tipo = :tipo', { tipo });
     return qb.getMany();
   }

@@ -14,8 +14,16 @@ export class EventosController {
   constructor(private readonly svc: EventosService) {}
 
   @Get()
-  findRecent(@Query('hours') hours?: string, @Query('tipo') tipo?: string) {
-    return this.svc.findRecent(hours ? Number(hours) : 24, tipo);
+  findRecent(
+    @Query('hours') hours?: string,
+    @Query('tipo') tipo?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.svc.findRecent(
+      hours ? Number(hours) : 24,
+      tipo,
+      limit ? Number(limit) : 500,
+    );
   }
 
   @Roles('admin', 'operador')
