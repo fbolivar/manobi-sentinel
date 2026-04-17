@@ -236,7 +236,7 @@ services:
     container_name: manobi-postfix
     restart: unless-stopped
     environment:
-      ALLOWED_SENDER_DOMAINS: "parques.gov.co"
+      ALLOWED_SENDER_DOMAINS: "parquesnacionales.gov.co"
       RELAYHOST: ${SMTP_RELAY_HOST}
       RELAYHOST_USERNAME: ${SMTP_RELAY_USER}
       RELAYHOST_PASSWORD: ${SMTP_RELAY_PASSWORD}
@@ -276,7 +276,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       GF_SMTP_ENABLED: "true"
       GF_SMTP_HOST: postfix:25
-      GF_SMTP_FROM_ADDRESS: alertas@parques.gov.co
+      GF_SMTP_FROM_ADDRESS: alertas@parquesnacionales.gov.co
       GF_SMTP_FROM_NAME: Manobi Sentinel
       GF_SMTP_SKIP_VERIFY: "true"
       GF_RENDERING_SERVER_URL: http://grafana-renderer:8081/render
