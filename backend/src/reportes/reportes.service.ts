@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, InternalServerErrorException, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Client as MinioClient } from 'minio';
@@ -51,14 +51,29 @@ export class ReportesService {
     const r = await this.findOne(id);
     if (!r.ruta_minio) throw new NotFoundException('Reporte sin archivo');
     const bucket = this.cfg.get<string>('minio.bucketReportes')!;
-    return this.minio.presignedGetObject(bucket, r.ruta_minio, 60 * 60);
+    try {
+      return await this.minio.presignedGetObject(bucket, r.ruta_minio, 60 * 60);
+    } catch (e) {
+      this.log.error(`MinIO presignedGetObject falló (${bucket}/${r.ruta_minio}): ${(e as Error).message}`);
+      throw new ServiceUnavailableException('Almacenamiento de reportes no disponible');
+    }
   }
 
   async downloadStream(id: string) {
     const r = await this.findOne(id);
     if (!r.ruta_minio) throw new NotFoundException('Reporte sin archivo');
     const bucket = this.cfg.get<string>('minio.bucketReportes')!;
-    const stream = await this.minio.getObject(bucket, r.ruta_minio);
+    let stream;
+    try {
+      stream = await this.minio.getObject(bucket, r.ruta_minio);
+    } catch (e) {
+      const msg = (e as Error).message;
+      this.log.error(`MinIO getObject falló (${bucket}/${r.ruta_minio}): ${msg}`);
+      if (msg.includes('NoSuchKey') || msg.includes('NotFound')) {
+        throw new NotFoundException('Archivo del reporte no encontrado en almacenamiento');
+      }
+      throw new ServiceUnavailableException('Almacenamiento de reportes no disponible');
+    }
     const ext = r.formato;
     const contentType =
       ext === 'pdf' ? 'application/pdf'
@@ -97,7 +112,13 @@ export class ReportesService {
 
     const bucket = this.cfg.get<string>('minio.bucketReportes')!;
     const objectName = `${tipo.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}.${ext}`;
-    await this.minio.putObject(bucket, objectName, buf, buf.length, { 'Content-Type': contentType });
+    try {
+      await this.minio.putObject(bucket, objectName, buf, buf.length, { 'Content-Type': contentType });
+    } catch (e) {
+      const msg = (e as Error).message;
+      this.log.error(`MinIO putObject falló (${bucket}/${objectName}): ${msg}`);
+      throw new InternalServerErrorException(`No se pudo guardar el reporte en el almacenamiento (${msg})`);
+    }
 
     const saved = await this.repo.save({
       tipo, formato, generado_por: usuarioId,

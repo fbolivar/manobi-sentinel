@@ -9,11 +9,12 @@ import HeatmapLayer from 'ol/layer/Heatmap';
 import OSM from 'ol/source/OSM';
 import XYZ from 'ol/source/XYZ';
 import VectorSource from 'ol/source/Vector';
+import ClusterSource from 'ol/source/Cluster';
 import GeoJSON from 'ol/format/GeoJSON';
 import { Feature } from 'ol';
 import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
-import { Style, Fill, Stroke, Circle as CircleStyle } from 'ol/style';
+import { Style, Fill, Stroke, Circle as CircleStyle, Text } from 'ol/style';
 import { api } from '../../lib/api';
 import { useMapStore } from '../../stores/map.store';
 import type { EventoClimatico } from '../../types';
@@ -76,14 +77,39 @@ export function MapView() {
     if (!mapEl.current || mapRef.current) return;
     parquesRef.current = new VectorLayer({ source: new VectorSource(), style: styleFor, zIndex: 2 });
     eventosRef.current = new VectorLayer({ source: new VectorSource(), zIndex: 3 });
+    const hotspotsVectorSource = new VectorSource();
+    const hotspotsClusterSource = new ClusterSource({ distance: 40, source: hotspotsVectorSource });
     hotspotsRef.current = new VectorLayer({
-      source: new VectorSource(),
+      source: hotspotsClusterSource,
       zIndex: 5,
       style: (f) => {
-        const conf = Number(f.get('confianza') ?? 50);
-        const frp = Number(f.get('frp') ?? 1);
+        const features = f.get('features') as Feature[] | undefined;
+        const size = features?.length ?? 1;
+        if (size > 1) {
+          // Cluster
+          const hasRed = features!.some((ft) => Number(ft.get('confianza') ?? 50) > 70);
+          const hasOrange = features!.some((ft) => Number(ft.get('confianza') ?? 50) > 40);
+          const bg = hasRed ? 'rgba(229,57,53,0.9)' : hasOrange ? 'rgba(249,168,37,0.9)' : 'rgba(133,180,37,0.9)';
+          const r = Math.min(22, 12 + Math.log(size) * 3);
+          return new Style({
+            image: new CircleStyle({
+              radius: r,
+              fill: new Fill({ color: bg }),
+              stroke: new Stroke({ color: '#fff', width: 2 }),
+            }),
+            text: new Text({
+              text: String(size),
+              fill: new Fill({ color: '#fff' }),
+              font: 'bold 11px sans-serif',
+            }),
+          });
+        }
+        // Hotspot individual
+        const feat = features?.[0] ?? (f as Feature);
+        const conf = Number(feat.get('confianza') ?? 50);
+        const frp = Number(feat.get('frp') ?? 1);
         const r = Math.min(12, 4 + frp / 10);
-        const color = conf > 70 ? 'rgba(255,59,59,0.9)' : conf > 40 ? 'rgba(255,176,32,0.8)' : 'rgba(255,220,0,0.6)';
+        const color = conf > 70 ? 'rgba(229,57,53,0.9)' : conf > 40 ? 'rgba(249,168,37,0.8)' : 'rgba(255,220,0,0.6)';
         return new Style({ image: new CircleStyle({ radius: r, fill: new Fill({ color }), stroke: new Stroke({ color: '#fff', width: 1 }) }) });
       },
     });
@@ -114,8 +140,18 @@ export function MapView() {
       let hit = false;
       mapRef.current!.forEachFeatureAtPixel(evt.pixel, (f) => {
         const p = f.getProperties();
-        if (p.frp != null) {
-          setSelected({ nombre: `Punto de calor (${p.fuente})`, frp: p.frp, confianza: p.confianza, fuente: p.fuente, fecha: p.fecha, nivel: p.confianza > 70 ? 'alto' : 'medio' });
+        const children = p.features as Feature[] | undefined;
+        if (children && children.length > 1) {
+          // Cluster: zoom in
+          const view = mapRef.current!.getView();
+          const coord = (f.getGeometry() as Point | undefined)?.getCoordinates();
+          if (coord) view.animate({ center: coord, zoom: Math.min((view.getZoom() ?? 5) + 2, 13), duration: 400 });
+          hit = true; return true;
+        }
+        const inner = children && children.length === 1 ? children[0] : (f as Feature);
+        const ip = inner.getProperties();
+        if (ip.frp != null) {
+          setSelected({ nombre: `Punto de calor (${ip.fuente})`, frp: ip.frp, confianza: ip.confianza, fuente: ip.fuente, fecha: ip.fecha, nivel: Number(ip.confianza) > 70 ? 'alto' : 'medio' });
           hit = true; return true;
         }
         if (p.nombre) {
@@ -163,7 +199,9 @@ export function MapView() {
 
   useEffect(() => {
     if (!ready || !hotspotsRef.current || !hotspotsQ.data) return;
-    const src = hotspotsRef.current.getSource()!;
+    const cluster = hotspotsRef.current.getSource() as ClusterSource | null;
+    const src = cluster?.getSource();
+    if (!src) return;
     src.clear();
     try { src.addFeatures(new GeoJSON().readFeatures(hotspotsQ.data, { featureProjection: 'EPSG:3857' })); }
     catch (e) { console.warn('[hotspots]', e); }

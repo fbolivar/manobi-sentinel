@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Backup diario de PostgreSQL + MinIO. Agendar vía cron en el host.
 set -euo pipefail
+set -a; source /opt/manobi-sentinel/.env; set +a
 STAMP=$(date +%Y%m%d-%H%M%S)
 OUT=/opt/manobi/backups
 mkdir -p "$OUT"

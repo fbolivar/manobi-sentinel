@@ -4,7 +4,7 @@ import { Request } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
-import { LoginDto, RefreshDto } from './dto/login.dto';
+import { LoginDto, LogoutDto, RefreshDto } from './dto/login.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -33,5 +33,5 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(200)
-  logout() { return this.auth.logout(); }
+  logout(@Body() dto: LogoutDto) { return this.auth.logout(dto?.refresh_token); }
 }

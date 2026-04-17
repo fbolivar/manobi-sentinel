@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,7 +12,7 @@ import { evaluar } from './rule-evaluator';
 import { MetricsService } from '../metrics/metrics.service';
 
 @Injectable()
-export class AlertEngineService {
+export class AlertEngineService implements OnApplicationBootstrap {
   private readonly log = new Logger('AlertEngine');
 
   constructor(
@@ -24,6 +24,15 @@ export class AlertEngineService {
     private readonly alertas: AlertasService,
     private readonly metrics: MetricsService,
   ) {}
+
+  onApplicationBootstrap() {
+    // Pre-warm: primera evaluación a los 30s del boot, para que el dashboard
+    // tenga alertas frescas sin esperar el primer ciclo de 15 min.
+    setTimeout(() => {
+      this.log.log('Pre-warm: evaluación inicial tras boot');
+      this.run().catch((e) => this.log.error(`Pre-warm falló: ${(e as Error).message}`));
+    }, 30_000).unref?.();
+  }
 
   @Cron('0 */15 * * * *', { name: 'alert-engine', timeZone: 'America/Bogota' })
   async run() {

@@ -104,8 +104,16 @@ export class AuthService {
     return this.issueTokens(user, meta);
   }
 
-  async logout(jti?: string) {
-    if (jti) await this.redis.del(this.refreshKey(jti));
+  async logout(refreshToken?: string) {
+    if (!refreshToken) return { ok: true };
+    try {
+      const p = await this.jwt.verifyAsync<{ jti?: string }>(refreshToken, {
+        secret: this.cfg.get('jwt.refreshSecret'),
+      });
+      if (p.jti) await this.redis.del(this.refreshKey(p.jti));
+    } catch {
+      /* refresh token inválido o expirado — nada que revocar */
+    }
     return { ok: true };
   }
 }

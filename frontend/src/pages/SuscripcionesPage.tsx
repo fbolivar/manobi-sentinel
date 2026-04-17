@@ -126,7 +126,10 @@ export function SuscripcionesPage() {
             <h2 className="text-sm font-bold tracking-wider">MIS SUSCRIPCIONES ({subs.data?.length ?? 0})</h2>
           </div>
           <div className="overflow-y-auto flex-1 divide-y divide-border-subtle">
-            {subs.data?.length === 0 && (
+            {subs.isLoading && (
+              <div className="p-6 text-center text-txt-light text-xs">Cargando suscripciones…</div>
+            )}
+            {!subs.isLoading && subs.data?.length === 0 && (
               <div className="p-6 text-center text-txt-light text-xs">Sin suscripciones. Crea una en el panel izquierdo.</div>
             )}
             {subs.data?.map((s) => (

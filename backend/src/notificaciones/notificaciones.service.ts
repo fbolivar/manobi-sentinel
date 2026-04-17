@@ -26,12 +26,13 @@ export class NotificacionesService implements OnModuleInit {
     });
   }
 
-  async enviarEmail(to: string | string[], subject: string, html: string) {
+  async enviarEmail(to: string | string[], subject: string, html: string, attachments?: Array<{ filename: string; content: Buffer; contentType?: string }>) {
     try {
       const info = await this.transporter.sendMail({
         from: this.cfg.get<string>('smtp.from'),
         to: Array.isArray(to) ? to.join(',') : to,
         subject, html,
+        attachments,
       });
       this.log.log(`Email enviado messageId=${info.messageId} to=${to}`);
       return info;

@@ -85,7 +85,7 @@ export function HistoricoPage() {
             <span className="text-xs font-mono text-txt-muted">PARQUE</span>
             <select value={parqueId} onChange={(e) => setParqueId(e.target.value)}
               title="Parque" aria-label="Parque"
-              className="mt-1 block input-field !py-1.5 !text-xs w-56">
+              className="mt-1 block input-field !py-1.5 !text-xs w-full md:w-56">
               <option value="">— Todos —</option>
               {parques.data?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
             </select>
@@ -94,7 +94,7 @@ export function HistoricoPage() {
             <span className="text-xs font-mono text-txt-muted">NIVEL</span>
             <select value={nivel} onChange={(e) => setNivel(e.target.value)}
               title="Nivel" aria-label="Nivel"
-              className="mt-1 block input-field !py-1.5 !text-xs w-32">
+              className="mt-1 block input-field !py-1.5 !text-xs w-full md:w-32">
               <option value="">Todos</option>
               <option value="rojo">Rojo</option>
               <option value="amarillo">Amarillo</option>
@@ -120,7 +120,8 @@ export function HistoricoPage() {
 
         <section className="panel p-4">
           <h2 className="text-sm font-bold tracking-wider mb-3">ALERTAS POR DÍA</h2>
-          {days.length === 0 && <div className="text-xs text-txt-light">Sin datos para el rango seleccionado.</div>}
+          {stats.isLoading && <div className="text-xs text-txt-light">Cargando estadísticas…</div>}
+          {!stats.isLoading && days.length === 0 && <div className="text-xs text-txt-light">Sin datos para el rango seleccionado.</div>}
           <div className="flex items-end gap-1 h-40 overflow-x-auto">
             {days.map(([day, levels]) => {
               const total = Object.values(levels).reduce((s, n) => s + n, 0);

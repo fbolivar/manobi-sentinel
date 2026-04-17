@@ -98,7 +98,7 @@ export function ReportesPage() {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <label className="block">
               <span className="text-xs font-mono text-white/50">DESDE</span>
               <input type="datetime-local" value={desde} onChange={(e) => setDesde(e.target.value)}
