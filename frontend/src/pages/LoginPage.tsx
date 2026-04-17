@@ -26,86 +26,92 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel — branding */}
-      <div className="hidden lg:flex lg:w-[45%] bg-gradient-to-br from-pnn-green via-pnn-green-dark to-pnn-forest flex-col justify-between p-10 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M30 5 L55 50 L5 50 Z\' fill=\'none\' stroke=\'white\' stroke-width=\'0.5\'/%3E%3C/svg%3E")', backgroundSize: '60px' }} />
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
-            <img src="/logo.png" alt="Manobi Sentinel" className="h-14 w-14 rounded-xl object-cover shadow-lg" />
-            <div>
-              <div className="text-xl font-bold tracking-wide">Manobi Sentinel</div>
-              <div className="text-sm text-white/70">Sistema de Alerta Temprana</div>
-            </div>
-          </div>
-        </div>
-        <div className="relative z-10 space-y-4">
-          <h2 className="text-3xl font-bold leading-tight">Protegiendo los<br />Parques Nacionales<br />de Colombia</h2>
-          <p className="text-white/70 text-sm max-w-sm">Monitoreo satelital en tiempo real de 73 áreas protegidas con inteligencia artificial y datos IDEAM.</p>
-          <div className="flex gap-4 text-xs text-white/60">
-            <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-white/80" /> 8 fuentes de datos</div>
-            <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-white/80" /> IA predictiva</div>
-            <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-white/80" /> 24/7</div>
-          </div>
-        </div>
-        <div className="relative z-10 text-xs text-white/40">
-          Parques Nacionales Naturales de Colombia<br />
-          Ministerio de Ambiente y Desarrollo Sostenible
-        </div>
-      </div>
+    <div className="min-h-screen grid place-items-center px-4 py-10 bg-gradient-to-br from-white via-white to-pnn-green/5 relative overflow-hidden">
+      {/* Blobs decorativos muy sutiles */}
+      <div className="pointer-events-none absolute -top-32 -left-32 h-80 w-80 rounded-full bg-pnn-green/10 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute -bottom-32 -right-32 h-80 w-80 rounded-full bg-pnn-blue/10 blur-3xl" aria-hidden />
 
-      {/* Right panel — login form */}
-      <div className="flex-1 flex items-center justify-center px-6 bg-bg">
-        <form onSubmit={submit} className="w-full max-w-sm space-y-6">
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-4">
-            <div className="inline-flex items-center gap-3 mb-3">
-              <img src="/logo.png" alt="Manobi Sentinel" className="h-11 w-11 rounded-xl object-cover" />
-              <div className="text-left">
-                <div className="text-lg font-bold text-txt">Manobi Sentinel</div>
-                <div className="text-xs text-txt-muted">PNN Colombia</div>
-              </div>
-            </div>
-          </div>
+      <main className="relative w-full max-w-md">
+        {/* Header con logo + nombre */}
+        <header className="flex flex-col items-center text-center mb-6">
+          <img src="/logo.png" alt="" className="h-14 w-14 rounded-2xl object-cover shadow-md ring-1 ring-black/5 mb-4" />
+          <h1 className="text-2xl font-bold tracking-tight text-txt">Manobi Sentinel</h1>
+          <p className="text-xs text-txt-muted mt-1">Sistema de Alerta Temprana · PNN Colombia</p>
+        </header>
 
-          <div>
-            <h1 className="text-2xl font-bold text-txt">Iniciar sesión</h1>
-            <p className="text-sm text-txt-muted mt-1">Ingrese sus credenciales para acceder al sistema</p>
-          </div>
+        {/* Card con formulario */}
+        <form onSubmit={submit}
+          className="bg-white rounded-2xl shadow-xl ring-1 ring-black/5 p-7 sm:p-8 space-y-5">
+          <h2 className="text-lg font-semibold text-txt">Iniciar sesión</h2>
 
           <label className="block">
-            <span className="text-xs font-medium text-txt-muted uppercase tracking-wider">Email</span>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+            <span className="text-[11px] font-medium text-txt-muted uppercase tracking-wider">Email institucional</span>
+            <input
+              type="email" required autoComplete="email"
+              value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="usuario@parquesnacionales.gov.co"
-              className="input-field mt-1.5" />
+              className="mt-1.5 w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-txt
+                         placeholder:text-gray-400
+                         focus:border-pnn-green focus:ring-2 focus:ring-pnn-green/20 focus:outline-none
+                         transition" />
           </label>
+
           <label className="block">
-            <span className="text-xs font-medium text-txt-muted uppercase tracking-wider">Contraseña</span>
-            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+            <span className="text-[11px] font-medium text-txt-muted uppercase tracking-wider">Contraseña</span>
+            <input
+              type="password" required autoComplete="current-password"
+              value={password} onChange={(e) => setPassword(e.target.value)}
               placeholder="Mínimo 8 caracteres"
-              className="input-field mt-1.5" />
+              className="mt-1.5 w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-txt
+                         placeholder:text-gray-400
+                         focus:border-pnn-green focus:ring-2 focus:ring-pnn-green/20 focus:outline-none
+                         transition" />
           </label>
 
           {error && (
-            <div className="flex items-center gap-2 text-sm text-accent-red bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-              <span>⚠</span> {error}
+            <div role="alert"
+              className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3.5 py-2.5">
+              <span aria-hidden>⚠</span>
+              <span className="leading-snug">{error}</span>
             </div>
           )}
 
-          <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-50">
-            {loading ? 'Autenticando…' : 'Iniciar sesión'}
+          <button type="submit" disabled={loading}
+            className="group w-full bg-pnn-green text-white font-semibold text-sm py-2.5 rounded-lg
+                       hover:brightness-110 active:brightness-95
+                       disabled:opacity-60 disabled:cursor-not-allowed
+                       flex items-center justify-center gap-2 transition">
+            {loading ? 'Autenticando…' : (
+              <>
+                Ingresar
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  className="transition-transform group-hover:translate-x-0.5" aria-hidden>
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </>
+            )}
           </button>
-
-          <div className="flex items-center justify-center gap-2 pt-2">
-            <span className={`h-2 w-2 rounded-full ${loading ? 'bg-amber-400 animate-pulse' : 'bg-accent-green'}`} />
-            <span className="text-xs text-txt-light">Sistema operativo</span>
-          </div>
-
-          <p className="text-[11px] text-txt-light text-center pt-4 border-t border-border-subtle">
-            Acceso restringido — Sistema gubernamental monitoreado
-          </p>
         </form>
-      </div>
+
+        {/* Footer institucional */}
+        <footer className="mt-6 text-center space-y-1">
+          <p className="text-[11px] text-txt-muted">
+            Parques Nacionales Naturales de Colombia
+            <span className="mx-1.5 text-gray-300">·</span>
+            Ministerio de Ambiente y Desarrollo Sostenible
+          </p>
+          <p className="text-[10px] text-txt-light flex items-center justify-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            Acceso restringido · Sistema gubernamental monitoreado
+          </p>
+        </footer>
+      </main>
     </div>
   );
 }
