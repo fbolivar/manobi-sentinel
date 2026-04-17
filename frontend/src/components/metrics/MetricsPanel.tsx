@@ -45,7 +45,7 @@ export function MetricsPanel() {
     const k = a.parque?.nombre ?? '—';
     porParque.set(k, (porParque.get(k) ?? 0) + 1);
   });
-  const top5 = [...porParque.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const top3 = [...porParque.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
 
   const topPreds = (preds.data ?? [])
     .map((p) => ({ ...p, prob: Number(p.probabilidad) }))
@@ -68,7 +68,7 @@ export function MetricsPanel() {
       <div className="px-4 py-3 border-b border-border-subtle">
         <h2 className="text-sm font-semibold text-txt tracking-wide">Métricas en tiempo real</h2>
       </div>
-      <div className="p-4 pb-6 space-y-4 overflow-y-auto">
+      <div className="p-4 pb-6 space-y-3 overflow-y-auto">
         {/* Contadores por nivel */}
         <div className="grid grid-cols-3 gap-2">
           {(['rojo', 'amarillo', 'verde'] as const).map((n) => (
@@ -89,10 +89,10 @@ export function MetricsPanel() {
 
         {/* Top parques */}
         <div>
-          <div className="text-xs font-semibold text-txt-muted uppercase tracking-wider mb-2">Top parques</div>
+          <div className="text-xs font-semibold text-txt-muted uppercase tracking-wider mb-2">Top 3 parques con más alertas</div>
           <div className="space-y-0.5">
-            {top5.length === 0 && <div className="text-xs text-txt-light">Sin datos aún</div>}
-            {top5.map(([nombre, total]) => (
+            {top3.length === 0 && <div className="text-xs text-txt-light">Sin datos aún</div>}
+            {top3.map(([nombre, total]) => (
               <div key={nombre} className="flex items-center justify-between text-xs py-1.5 border-b border-border-subtle">
                 <span className="truncate text-txt">{nombre}</span>
                 <span className="font-mono font-bold text-pnn-blue ml-2">{total}</span>
