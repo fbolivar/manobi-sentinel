@@ -6,7 +6,6 @@ import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import HeatmapLayer from 'ol/layer/Heatmap';
-import OSM from 'ol/source/OSM';
 import XYZ from 'ol/source/XYZ';
 import VectorSource from 'ol/source/Vector';
 import ClusterSource from 'ol/source/Cluster';
@@ -127,9 +126,15 @@ export function MapView() {
       target: mapEl.current,
       layers: [
         new TileLayer({
+          // Tiles siempre se piden al mismo origen (/tiles/osm/...). Nginx actua como
+          // proxy-cache hacia tile.openstreetmap.org. Beneficios:
+          //  - El navegador no contacta a OSM directamente (CSP img-src 'self' estricta).
+          //  - Una vez cacheado un tile, requests siguientes no van a internet.
+          //  - Si mas adelante VITE_LOCAL_TILES=true y tileserver-gl tiene MBTiles, se puede
+          //    volver a esa ruta con cero cambios en el server (solo rebuild).
           source: import.meta.env.VITE_LOCAL_TILES === 'true'
             ? new XYZ({ url: `${import.meta.env.VITE_TILES_URL ?? '/tiles'}/styles/basic-preview/{z}/{x}/{y}.png`, maxZoom: 14, attributions: '© OpenStreetMap · Manobi on-premise' })
-            : new OSM(),
+            : new XYZ({ url: '/tiles/osm/{z}/{x}/{y}.png', maxZoom: 19, attributions: '© OpenStreetMap contributors · via Manobi Sentinel' }),
           zIndex: 0,
         }),
         parquesRef.current, eventosRef.current, heatmapRef.current, hotspotsRef.current!,
