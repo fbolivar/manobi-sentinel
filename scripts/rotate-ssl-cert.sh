@@ -26,7 +26,9 @@ mkdir -p "$SSL_DIR"
 case "$MODE" in
   self-signed)
     IP_SAN="${3:-192.168.50.5}"
-    SANS="DNS:${CN},IP:${IP_SAN},DNS:sentinel.parques.gov.co,DNS:manobi.local"
+    # SAN: CN + IP local + dominios institucionales conocidos. Se mantienen los
+    # antiguos para no romper clientes que aun referencien esos nombres.
+    SANS="DNS:${CN},IP:${IP_SAN},DNS:sentinel.parquesnacionales.gov.co,DNS:sentinel.parques.gov.co,DNS:manobi.local"
     echo "[*] Generando cert autofirmado (10 años) — CN=${CN}  SAN=${SANS}"
     openssl req -x509 -nodes -days 3650 -newkey rsa:4096 \
       -keyout "$SSL_DIR/manobi.key.new" \
