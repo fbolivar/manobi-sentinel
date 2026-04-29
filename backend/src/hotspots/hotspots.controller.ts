@@ -4,7 +4,6 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { HotspotsService } from './hotspots.service';
-import { NasaFirmsService } from './nasa-firms.service';
 import { DataSource } from 'typeorm';
 
 @ApiTags('hotspots')
@@ -14,7 +13,6 @@ import { DataSource } from 'typeorm';
 export class HotspotsController {
   constructor(
     private readonly svc: HotspotsService,
-    private readonly firms: NasaFirmsService,
     private readonly ds: DataSource,
   ) {}
 
@@ -28,7 +26,8 @@ export class HotspotsController {
               p.nombre AS parque_nombre
        FROM eventos_climaticos e
        LEFT JOIN parques p ON ST_Contains(p.geometria, e.ubicacion)
-       WHERE e.tipo = 'incendio' AND e.fuente LIKE 'NASA_FIRMS%' OR e.fuente LIKE 'ORORATECH%'
+       WHERE e.tipo = 'incendio'
+         AND (e.fuente LIKE 'ORORATECH%' OR e.fuente LIKE 'OroraTech%')
          AND e.fecha >= NOW() - ($1 || ' hours')::interval
        ORDER BY e.fecha DESC LIMIT 500`,
       [h],
