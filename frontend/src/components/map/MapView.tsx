@@ -49,14 +49,27 @@ export function MapView() {
   const [heatOpacity, setHeatOpacity] = useState(75);
   const [selected, setSelected] = useState<{ nombre: string; region?: string; nivel?: string; frp?: number; confianza?: number; fuente?: string; fecha?: string } | null>(null);
 
+  // Filtros de fecha para hotspots y eventos
+  const [periodo, setPeriodo] = useState<'6' | '12' | '24' | '48' | '72' | '168' | 'custom'>('24');
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
+
+  const hotspotsParams = periodo === 'custom' && (desde || hasta)
+    ? { desde: desde || undefined, hasta: hasta || undefined }
+    : { hours: periodo };
+
+  const eventosHours = periodo === 'custom'
+    ? '168'
+    : periodo;
+
   const parques = useQuery({
     queryKey: ['parques-geojson'],
     queryFn: async () => (await api.get('/parques/geojson')).data,
     staleTime: 5 * 60_000,
   });
   const eventos = useQuery<EventoClimatico[]>({
-    queryKey: ['eventos-map'],
-    queryFn: async () => (await api.get('/eventos-climaticos?hours=24')).data,
+    queryKey: ['eventos-map', eventosHours],
+    queryFn: async () => (await api.get('/eventos-climaticos', { params: { hours: eventosHours, limit: 2000 } })).data,
     refetchInterval: 60_000,
   });
   const heatmapQ = useQuery({
@@ -75,8 +88,8 @@ export function MapView() {
   });
   const iaOk = iaHealth.data?.checks?.ia === 'ok';
   const hotspotsQ = useQuery({
-    queryKey: ['hotspots-map'],
-    queryFn: async () => (await api.get('/hotspots?hours=24')).data,
+    queryKey: ['hotspots-map', hotspotsParams],
+    queryFn: async () => (await api.get('/hotspots', { params: hotspotsParams })).data,
     enabled: layers.hotspots,
     refetchInterval: 30 * 60_000,
   });
@@ -278,6 +291,52 @@ export function MapView() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Panel de filtro de fechas — bottom-left */}
+      <div className="absolute bottom-2 left-2 md:bottom-3 md:left-3 panel p-2.5 z-10 space-y-1.5 min-w-[200px] md:min-w-[240px]">
+        <div className="text-[10px] font-semibold text-txt-muted uppercase tracking-wider">Período</div>
+        <div className="flex flex-wrap gap-1">
+          {(['6','12','24','48','72','168'] as const).map((h) => (
+            <button key={h} type="button"
+              onClick={() => { setPeriodo(h); setDesde(''); setHasta(''); }}
+              className={`text-[10px] font-mono px-1.5 py-0.5 rounded border transition ${
+                periodo === h
+                  ? 'bg-pnn-blue/20 border-pnn-blue text-pnn-blue'
+                  : 'border-border-subtle text-txt-muted hover:border-pnn-blue/50 hover:text-txt'
+              }`}>
+              {h === '168' ? '7d' : `${h}h`}
+            </button>
+          ))}
+          <button type="button"
+            onClick={() => setPeriodo('custom')}
+            className={`text-[10px] font-mono px-1.5 py-0.5 rounded border transition ${
+              periodo === 'custom'
+                ? 'bg-pnn-blue/20 border-pnn-blue text-pnn-blue'
+                : 'border-border-subtle text-txt-muted hover:border-pnn-blue/50 hover:text-txt'
+            }`}>
+            personalizado
+          </button>
+        </div>
+        {periodo === 'custom' && (
+          <div className="space-y-1 pt-0.5">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-txt-muted w-10 shrink-0">Desde</span>
+              <input type="datetime-local" value={desde} title="Fecha inicio" aria-label="Fecha inicio"
+                onChange={(e) => setDesde(e.target.value)}
+                className="flex-1 bg-bg-surface2 border border-border-subtle rounded px-1.5 py-0.5 text-[10px] font-mono text-txt" />
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-txt-muted w-10 shrink-0">Hasta</span>
+              <input type="datetime-local" value={hasta} title="Fecha fin" aria-label="Fecha fin"
+                onChange={(e) => setHasta(e.target.value)}
+                className="flex-1 bg-bg-surface2 border border-border-subtle rounded px-1.5 py-0.5 text-[10px] font-mono text-txt" />
+            </div>
+          </div>
+        )}
+        <div className="text-[9px] text-txt-muted font-mono">
+          {hotspotsQ.data?.features?.length ?? 0} puntos · {eventos.data?.length ?? 0} eventos
+        </div>
       </div>
 
       <div className="absolute bottom-2 right-2 md:bottom-3 md:right-3 panel p-2 text-[10px] font-mono z-10 hidden md:block">
