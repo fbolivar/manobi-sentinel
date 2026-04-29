@@ -5,7 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { Repository } from 'typeorm';
 import { Prediccion } from '../common/entities/prediccion.entity';
 
-interface AIResponse {
+export interface AIResponse {
   tipo: string;
   probabilidad: number;
   clase: number;
