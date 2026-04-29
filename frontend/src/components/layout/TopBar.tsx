@@ -10,8 +10,10 @@ interface HealthData {
 }
 
 interface IdeamStatusData {
-  ideam: { ultimo_poll: string | null; ultimo_total: number; ultimo_modo: string; proximo_poll: string };
-  firms: { ultimo_poll: string | null; ultimo_total: number; proximo_poll: string };
+  ultimo_poll: string | null;
+  ultimo_total: number;
+  ultimo_modo: string;
+  proximo_poll: string;
 }
 
 function useClock() {
@@ -109,12 +111,10 @@ export function TopBar() {
         {ideamStatus.data && (
           <span
             className="flex items-center gap-1 border-l border-border-subtle pl-3 text-[10px] font-mono"
-            title={`IDEAM: último poll ${fmt(ideamStatus.data.ideam.ultimo_poll)} (${ideamStatus.data.ideam.ultimo_total} eventos)\nFIRMS: último poll ${fmt(ideamStatus.data.firms.ultimo_poll)} (${ideamStatus.data.firms.ultimo_total} focos)`}
+            title={`IDEAM: último poll ${fmt(ideamStatus.data.ultimo_poll)} — ${ideamStatus.data.ultimo_total} eventos (${ideamStatus.data.ultimo_modo})`}
           >
-            <span className={`inline-block h-1.5 w-1.5 rounded-full ${ideamStatus.data.ideam.ultimo_poll ? 'bg-pnn-blue' : 'bg-txt-muted'}`} />
-            IDEAM {fmt(ideamStatus.data.ideam.ultimo_poll)}
-            <span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-accent-red" />
-            FIRMS {fmt(ideamStatus.data.firms.ultimo_poll)}
+            <span className={`inline-block h-1.5 w-1.5 rounded-full ${ideamStatus.data.ultimo_poll ? 'bg-pnn-blue' : 'bg-txt-muted'}`} />
+            IDEAM {fmt(ideamStatus.data.ultimo_poll)}
           </span>
         )}
       </div>
