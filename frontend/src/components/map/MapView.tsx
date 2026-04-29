@@ -47,6 +47,7 @@ export function MapView() {
   const [ready, setReady] = useState(false);
   const [layers, setLayers] = useState({ base: true, parques: true, eventos: true, heatmap: false, hotspots: true });
   const [heatTipo, setHeatTipo] = useState<'incendio' | 'inundacion'>('incendio');
+  const [heatOpacity, setHeatOpacity] = useState(75);
   const [selected, setSelected] = useState<{ nombre: string; region?: string; nivel?: string; frp?: number; confianza?: number; fuente?: string; fecha?: string } | null>(null);
 
   const parques = useQuery({
@@ -64,7 +65,16 @@ export function MapView() {
     queryFn: async () => (await api.get(`/predicciones/heatmap/${heatTipo}`)).data,
     enabled: layers.heatmap,
     refetchInterval: 5 * 60_000,
+    staleTime: 4 * 60_000,
   });
+
+  const iaHealth = useQuery({
+    queryKey: ['ia-health'],
+    queryFn: async () => (await api.get('/health', { baseURL: '/' })).data as { checks?: { ia: 'ok' | 'error' } },
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+  const iaOk = iaHealth.data?.checks?.ia === 'ok';
   const hotspotsQ = useQuery({
     queryKey: ['hotspots-map'],
     queryFn: async () => (await api.get('/hotspots?hours=24')).data,
@@ -114,12 +124,12 @@ export function MapView() {
     });
     heatmapRef.current = new HeatmapLayer({
       source: new VectorSource(),
-      blur: 30, radius: 22,
+      blur: 28, radius: 20,
       weight: (f) => {
         const p = Number(f.get('probabilidad') ?? 0);
-        return p <= 0 ? 0 : Math.min(1, 0.15 + p / 40);
+        return p <= 0 ? 0 : Math.min(1, 0.1 + p / 35);
       },
-      gradient: ['#001f3f', '#0074D9', '#FFDC00', '#FF851B', '#FF4136'],
+      gradient: ['#001f3f', '#003f7f', '#0074D9', '#FFDC00', '#FF851B', '#FF4136'],
       zIndex: 4, opacity: 0.75,
     });
     mapRef.current = new Map({
@@ -221,6 +231,10 @@ export function MapView() {
     hotspotsRef.current?.setVisible(layers.hotspots);
   }, [layers]);
 
+  useEffect(() => {
+    heatmapRef.current?.setOpacity(heatOpacity / 100);
+  }, [heatOpacity]);
+
   // Focus en parque desde AlertsPanel
   const focusParqueId = useMapStore((s) => s.focusParqueId);
   const focusTs = useMapStore((s) => s.focusTs);
@@ -243,21 +257,50 @@ export function MapView() {
     <div className="panel relative overflow-hidden h-full w-full min-h-[400px]">
       <div ref={mapEl} className="absolute inset-0 bg-[#0a0e1a]" />
 
-      <div className="absolute top-2 right-2 md:top-3 md:right-3 panel p-2.5 text-xs space-y-1.5 z-10 min-w-[140px] md:min-w-[160px]">
+      <div className="absolute top-2 right-2 md:top-3 md:right-3 panel p-2.5 text-xs space-y-1.5 z-10 min-w-[150px] md:min-w-[180px]">
         <div className="text-[10px] font-semibold text-txt-muted uppercase tracking-wider mb-1">Capas</div>
         {(['base', 'parques', 'eventos', 'heatmap', 'hotspots'] as const).map((k) => (
           <label key={k} className="flex items-center gap-2 cursor-pointer py-0.5">
             <input type="checkbox" className="h-4 w-4 md:h-3.5 md:w-3.5" checked={layers[k]} onChange={(e) => setLayers((s) => ({ ...s, [k]: e.target.checked }))} />
-            <span className="capitalize text-xs text-txt">{k === 'heatmap' ? 'Heatmap IA' : k === 'hotspots' ? 'Puntos de calor' : k}</span>
+            <span className="capitalize text-xs text-txt">
+              {k === 'heatmap' ? 'Heatmap IA' : k === 'hotspots' ? 'Puntos de calor' : k}
+            </span>
+            {k === 'heatmap' && (
+              <span
+                className={`ml-auto text-[9px] font-mono px-1 rounded ${iaOk ? 'bg-accent-green/20 text-accent-green' : 'bg-accent-red/20 text-accent-red'}`}
+                title={iaOk ? 'Servicio IA disponible' : 'IA no disponible — datos vacíos'}>
+                {iaOk ? 'OK' : 'OFF'}
+              </span>
+            )}
           </label>
         ))}
         {layers.heatmap && (
-          <select value={heatTipo} onChange={(e) => setHeatTipo(e.target.value as 'incendio' | 'inundacion')}
-            title="Tipo de heatmap IA" aria-label="Tipo de heatmap IA"
-            className="input-field mt-1 !py-1.5 text-xs">
-            <option value="incendio">Incendio</option>
-            <option value="inundacion">Inundación</option>
-          </select>
+          <div className="space-y-1.5 pt-1 border-t border-border-subtle">
+            <select value={heatTipo} onChange={(e) => setHeatTipo(e.target.value as 'incendio' | 'inundacion')}
+              title="Tipo de heatmap IA" aria-label="Tipo de heatmap IA"
+              className="input-field !py-1 text-xs w-full">
+              <option value="incendio">🔥 Incendio</option>
+              <option value="inundacion">🌊 Inundación</option>
+            </select>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-txt-muted shrink-0">Opacidad</span>
+              <input type="range" min="10" max="100" value={heatOpacity}
+                title="Opacidad del heatmap IA" aria-label="Opacidad del heatmap IA"
+                onChange={(e) => setHeatOpacity(Number(e.target.value))}
+                className="flex-1 h-1 accent-pnn-blue" />
+              <span className="text-[10px] font-mono text-txt-muted w-6 text-right">{heatOpacity}%</span>
+            </div>
+            {heatmapQ.isFetching && <div className="text-[10px] text-txt-muted animate-pulse">Cargando IA…</div>}
+            {heatmapQ.data && (
+              <div className="text-[10px] text-txt-muted">
+                {heatmapQ.data.features?.length ?? 0} puntos
+                {heatmapQ.dataUpdatedAt ? ` · ${new Date(heatmapQ.dataUpdatedAt).toLocaleTimeString('es-CO', { hour12: false, timeZone: 'America/Bogota', hour: '2-digit', minute: '2-digit' })}` : ''}
+              </div>
+            )}
+            {!iaOk && !heatmapQ.isFetching && (
+              <div className="text-[10px] text-accent-red/80">IA no disponible. Se muestra vacío.</div>
+            )}
+          </div>
         )}
       </div>
 
