@@ -148,9 +148,7 @@ export class EventosService {
            (SELECT AVG(intensidad) FROM cercanos_tyh WHERE tipo='humedad'),
            (SELECT MIN((datos_raw->>'humedad_relativa')::numeric) FROM dentro)
          ) AS humedad_relativa,
-         (SELECT AVG(intensidad) FROM eventos_climaticos e2, pq
-           WHERE e2.tipo='nivel_rio' AND e2.fecha >= NOW() - INTERVAL '6 hours'
-             AND ST_DWithin(pq.geometria, e2.ubicacion, 0.5)) AS nivel_rio_mt,
+         (SELECT AVG(intensidad) FROM dentro WHERE tipo='nivel_rio') AS nivel_rio_mt,
          (SELECT nivel_riesgo FROM pq) AS parque_nivel_riesgo`,
       [parqueId],
     ))[0] as Record<string, string>;

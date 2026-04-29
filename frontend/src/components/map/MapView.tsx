@@ -5,7 +5,6 @@ import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
-import HeatmapLayer from 'ol/layer/Heatmap';
 import XYZ from 'ol/source/XYZ';
 import VectorSource from 'ol/source/Vector';
 import GeoJSON from 'ol/format/GeoJSON';
@@ -41,12 +40,9 @@ export function MapView() {
   const mapRef = useRef<Map | null>(null);
   const parquesRef = useRef<VectorLayer<VectorSource> | null>(null);
   const eventosRef = useRef<VectorLayer<VectorSource> | null>(null);
-  const heatmapRef = useRef<HeatmapLayer | null>(null);
   const hotspotsRef = useRef<VectorLayer<VectorSource> | null>(null);
   const [ready, setReady] = useState(false);
-  const [layers, setLayers] = useState({ base: true, parques: true, eventos: true, heatmap: false, hotspots: true });
-  const [heatTipo, setHeatTipo] = useState<'incendio' | 'inundacion'>('incendio');
-  const [heatOpacity, setHeatOpacity] = useState(75);
+  const [layers, setLayers] = useState({ base: true, parques: true, eventos: true, hotspots: true });
   const [selected, setSelected] = useState<{ nombre: string; region?: string; nivel?: string; frp?: number; confianza?: number; fuente?: string; fecha?: string } | null>(null);
 
   // Filtros de fecha para hotspots y eventos
@@ -58,9 +54,7 @@ export function MapView() {
     ? { desde: desde || undefined, hasta: hasta || undefined }
     : { hours: periodo };
 
-  const eventosHours = periodo === 'custom'
-    ? '168'
-    : periodo;
+  const eventosHours = periodo === 'custom' ? '168' : periodo;
 
   const parques = useQuery({
     queryKey: ['parques-geojson'],
@@ -72,21 +66,6 @@ export function MapView() {
     queryFn: async () => (await api.get('/eventos-climaticos', { params: { hours: eventosHours, limit: 2000 } })).data,
     refetchInterval: 60_000,
   });
-  const heatmapQ = useQuery({
-    queryKey: ['heatmap', heatTipo],
-    queryFn: async () => (await api.get(`/predicciones/heatmap/${heatTipo}`)).data,
-    enabled: layers.heatmap,
-    refetchInterval: 5 * 60_000,
-    staleTime: 4 * 60_000,
-  });
-
-  const iaHealth = useQuery({
-    queryKey: ['ia-health'],
-    queryFn: async () => (await api.get('/health', { baseURL: '/' })).data as { checks?: { ia: 'ok' | 'error' } },
-    refetchInterval: 30_000,
-    staleTime: 15_000,
-  });
-  const iaOk = iaHealth.data?.checks?.ia === 'ok';
   const hotspotsQ = useQuery({
     queryKey: ['hotspots-map', hotspotsParams],
     queryFn: async () => (await api.get('/hotspots', { params: hotspotsParams })).data,
@@ -115,32 +94,16 @@ export function MapView() {
         });
       },
     });
-    heatmapRef.current = new HeatmapLayer({
-      source: new VectorSource(),
-      blur: 28, radius: 20,
-      weight: (f) => {
-        const p = Number(f.get('probabilidad') ?? 0);
-        return p <= 0 ? 0 : Math.min(1, 0.1 + p / 35);
-      },
-      gradient: ['#001f3f', '#003f7f', '#0074D9', '#FFDC00', '#FF851B', '#FF4136'],
-      zIndex: 4, opacity: 0.75,
-    });
     mapRef.current = new Map({
       target: mapEl.current,
       layers: [
         new TileLayer({
-          // Tiles siempre se piden al mismo origen (/tiles/osm/...). Nginx actua como
-          // proxy-cache hacia tile.openstreetmap.org. Beneficios:
-          //  - El navegador no contacta a OSM directamente (CSP img-src 'self' estricta).
-          //  - Una vez cacheado un tile, requests siguientes no van a internet.
-          //  - Si mas adelante VITE_LOCAL_TILES=true y tileserver-gl tiene MBTiles, se puede
-          //    volver a esa ruta con cero cambios en el server (solo rebuild).
           source: import.meta.env.VITE_LOCAL_TILES === 'true'
             ? new XYZ({ url: `${import.meta.env.VITE_TILES_URL ?? '/tiles'}/styles/basic-preview/{z}/{x}/{y}.png`, maxZoom: 14, attributions: '© OpenStreetMap · Manobi on-premise' })
             : new XYZ({ url: '/tiles/osm/{z}/{x}/{y}.png', maxZoom: 19, attributions: '© OpenStreetMap contributors · via Manobi Sentinel' }),
           zIndex: 0,
         }),
-        parquesRef.current, eventosRef.current, heatmapRef.current, hotspotsRef.current!,
+        parquesRef.current, eventosRef.current, hotspotsRef.current!,
       ],
       view: new View({ center: fromLonLat([-73.5, 4.5]), zoom: 5.2 }),
     });
@@ -196,13 +159,6 @@ export function MapView() {
   }, [ready, eventos.data]);
 
   useEffect(() => {
-    if (!ready || !heatmapRef.current || !heatmapQ.data) return;
-    const src = heatmapRef.current.getSource()!;
-    src.clear();
-    src.addFeatures(new GeoJSON().readFeatures(heatmapQ.data, { featureProjection: 'EPSG:3857' }));
-  }, [ready, heatmapQ.data]);
-
-  useEffect(() => {
     if (!ready || !hotspotsRef.current || !hotspotsQ.data) return;
     const src = hotspotsRef.current.getSource();
     if (!src) return;
@@ -216,13 +172,8 @@ export function MapView() {
     mapRef.current.getLayers().item(0)?.setVisible(layers.base);
     parquesRef.current?.setVisible(layers.parques);
     eventosRef.current?.setVisible(layers.eventos);
-    heatmapRef.current?.setVisible(layers.heatmap);
     hotspotsRef.current?.setVisible(layers.hotspots);
   }, [layers]);
-
-  useEffect(() => {
-    heatmapRef.current?.setOpacity(heatOpacity / 100);
-  }, [heatOpacity]);
 
   // Focus en parque desde AlertsPanel
   const focusParqueId = useMapStore((s) => s.focusParqueId);
@@ -246,51 +197,18 @@ export function MapView() {
     <div className="panel relative overflow-hidden h-full w-full min-h-[400px]">
       <div ref={mapEl} className="absolute inset-0 bg-[#0a0e1a]" />
 
+      {/* Panel de capas — top-right */}
       <div className="absolute top-2 right-2 md:top-3 md:right-3 panel p-2.5 text-xs space-y-1.5 z-10 min-w-[150px] md:min-w-[180px]">
         <div className="text-[10px] font-semibold text-txt-muted uppercase tracking-wider mb-1">Capas</div>
-        {(['base', 'parques', 'eventos', 'heatmap', 'hotspots'] as const).map((k) => (
+        {(['base', 'parques', 'eventos', 'hotspots'] as const).map((k) => (
           <label key={k} className="flex items-center gap-2 cursor-pointer py-0.5">
-            <input type="checkbox" className="h-4 w-4 md:h-3.5 md:w-3.5" checked={layers[k]} onChange={(e) => setLayers((s) => ({ ...s, [k]: e.target.checked }))} />
+            <input type="checkbox" className="h-4 w-4 md:h-3.5 md:w-3.5" checked={layers[k]}
+              onChange={(e) => setLayers((s) => ({ ...s, [k]: e.target.checked }))} />
             <span className="capitalize text-xs text-txt">
-              {k === 'heatmap' ? 'Heatmap IA' : k === 'hotspots' ? 'Puntos de calor' : k}
+              {k === 'hotspots' ? 'Puntos de calor' : k === 'base' ? 'Base' : k === 'parques' ? 'Parques' : 'Eventos'}
             </span>
-            {k === 'heatmap' && (
-              <span
-                className={`ml-auto text-[9px] font-mono px-1 rounded ${iaOk ? 'bg-accent-green/20 text-accent-green' : 'bg-accent-red/20 text-accent-red'}`}
-                title={iaOk ? 'Servicio IA disponible' : 'IA no disponible — datos vacíos'}>
-                {iaOk ? 'OK' : 'OFF'}
-              </span>
-            )}
           </label>
         ))}
-        {layers.heatmap && (
-          <div className="space-y-1.5 pt-1 border-t border-border-subtle">
-            <select value={heatTipo} onChange={(e) => setHeatTipo(e.target.value as 'incendio' | 'inundacion')}
-              title="Tipo de heatmap IA" aria-label="Tipo de heatmap IA"
-              className="input-field !py-1 text-xs w-full">
-              <option value="incendio">🔥 Incendio</option>
-              <option value="inundacion">🌊 Inundación</option>
-            </select>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-txt-muted shrink-0">Opacidad</span>
-              <input type="range" min="10" max="100" value={heatOpacity}
-                title="Opacidad del heatmap IA" aria-label="Opacidad del heatmap IA"
-                onChange={(e) => setHeatOpacity(Number(e.target.value))}
-                className="flex-1 h-1 accent-pnn-blue" />
-              <span className="text-[10px] font-mono text-txt-muted w-6 text-right">{heatOpacity}%</span>
-            </div>
-            {heatmapQ.isFetching && <div className="text-[10px] text-txt-muted animate-pulse">Cargando IA…</div>}
-            {heatmapQ.data && (
-              <div className="text-[10px] text-txt-muted">
-                {heatmapQ.data.features?.length ?? 0} puntos
-                {heatmapQ.dataUpdatedAt ? ` · ${new Date(heatmapQ.dataUpdatedAt).toLocaleTimeString('es-CO', { hour12: false, timeZone: 'America/Bogota', hour: '2-digit', minute: '2-digit' })}` : ''}
-              </div>
-            )}
-            {!iaOk && !heatmapQ.isFetching && (
-              <div className="text-[10px] text-accent-red/80">IA no disponible. Se muestra vacío.</div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Panel de filtro de fechas — bottom-left */}
@@ -339,6 +257,7 @@ export function MapView() {
         </div>
       </div>
 
+      {/* Leyenda nivel de riesgo — bottom-right */}
       <div className="absolute bottom-2 right-2 md:bottom-3 md:right-3 panel p-2 text-[10px] font-mono z-10 hidden md:block">
         <div className="text-white/50 mb-1">NIVEL DE RIESGO</div>
         <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-sm" style={{background:NIVEL_FILL.alto, border:`1px solid ${NIVEL_STROKE.alto}`}}/>Alto</div>
