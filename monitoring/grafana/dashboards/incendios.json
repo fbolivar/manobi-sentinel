@@ -1,0 +1,87 @@
+{
+  "title": "Manobi Sentinel — Incendios y Hotspots",
+  "uid": "manobi-incendios",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "tags": ["manobi", "incendios"],
+  "time": { "from": "now-24h", "to": "now" },
+  "timezone": "America/Bogota",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Hotspots 24h",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM eventos_climaticos WHERE tipo='incendio' AND creado_en >= NOW() - INTERVAL '24 hours';" }]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Hotspots dentro de parques",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "orange" }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM alertas WHERE tipo IN ('Incendio satelital','Anomalía térmica') AND creado_en >= NOW() - INTERVAL '24 hours';" }]
+    },
+    {
+      "id": 3, "type": "stat", "title": "FRP máximo (MW)",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"color":"green"},{"color":"yellow","value":50},{"color":"red","value":100}] }, "unit": "short", "decimals": 1 } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT MAX(intensidad) AS value FROM eventos_climaticos WHERE tipo='incendio' AND creado_en >= NOW() - INTERVAL '24 hours';" }]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Fuentes NASA FIRMS",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM eventos_climaticos WHERE fuente LIKE 'NASA_FIRMS%' AND creado_en >= NOW() - INTERVAL '24 hours';" }]
+    },
+    {
+      "id": 5, "type": "stat", "title": "Fuentes OroraTech",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "purple" }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM eventos_climaticos WHERE fuente LIKE 'ORORATECH%' AND creado_en >= NOW() - INTERVAL '24 hours';" }]
+    },
+    {
+      "id": 6, "type": "stat", "title": "Prob. incendio IA (prom)",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"color":"green"},{"color":"yellow","value":40},{"color":"red","value":70}] }, "unit": "percent", "decimals": 1 } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT ROUND(AVG(probabilidad)::numeric,1) AS value FROM predicciones WHERE tipo='incendio' AND fecha >= NOW() - INTERVAL '1 hour';" }]
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "Hotspots por hora (NASA FIRMS vs OroraTech)",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 50 }, "unit": "short" } },
+      "targets": [{ "refId": "A", "format": "time_series", "rawSql": "SELECT DATE_TRUNC('hour', creado_en) AS time, CASE WHEN fuente LIKE 'NASA%' THEN 'NASA FIRMS' WHEN fuente LIKE 'ORORA%' THEN 'OroraTech' ELSE fuente END AS metric, COUNT(*) AS value FROM eventos_climaticos WHERE tipo='incendio' AND $__timeFilter(creado_en) GROUP BY 1, 2 ORDER BY 1;" }]
+    },
+    {
+      "id": 11, "type": "timeseries", "title": "FRP promedio por hora",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "fillOpacity": 10 } } },
+      "targets": [{ "refId": "A", "format": "time_series", "rawSql": "SELECT DATE_TRUNC('hour', creado_en) AS time, 'FRP MW' AS metric, ROUND(AVG(intensidad)::numeric, 2) AS value FROM eventos_climaticos WHERE tipo='incendio' AND $__timeFilter(creado_en) GROUP BY 1 ORDER BY 1;" }]
+    },
+    {
+      "id": 20, "type": "table", "title": "Parques con más alertas de incendio (24h)",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT p.nombre AS parque, COUNT(a.id) AS alertas, MAX(a.creado_en)::text AS ultima_alerta FROM alertas a JOIN parques p ON a.parque_id=p.id WHERE a.tipo IN ('Incendio satelital','Anomalía térmica','Riesgo extremo de incendio','Hotspot satelital dentro de parque') AND a.creado_en >= NOW() - INTERVAL '24 hours' GROUP BY p.nombre ORDER BY alertas DESC LIMIT 15;" }]
+    },
+    {
+      "id": 21, "type": "timeseries", "title": "Probabilidad IA incendio — top 5 parques",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100, "min": 0 } },
+      "targets": [{ "refId": "A", "format": "time_series", "rawSql": "WITH top AS (SELECT parque_id FROM predicciones WHERE tipo='incendio' AND fecha >= NOW() - INTERVAL '6 hours' GROUP BY parque_id ORDER BY AVG(probabilidad) DESC LIMIT 5) SELECT DATE_TRUNC('hour', pr.fecha) AS time, p.nombre AS metric, ROUND(AVG(pr.probabilidad)::numeric,1) AS value FROM predicciones pr JOIN parques p ON p.id=pr.parque_id JOIN top t ON t.parque_id=pr.parque_id WHERE pr.tipo='incendio' AND $__timeFilter(pr.fecha) GROUP BY 1, p.nombre ORDER BY 1;" }]
+    }
+  ]
+}

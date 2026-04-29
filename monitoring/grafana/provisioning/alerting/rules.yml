@@ -1,0 +1,160 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: manobi-critical
+    folder: Manobi Sentinel
+    interval: 1m
+    rules:
+      - uid: alert-api-down
+        title: API Manobi caída
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2093
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              editorMode: code
+              expr: 'up{job="api"} == 0'
+              instant: true
+              refId: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          summary: El contenedor api no responde
+        labels:
+          severity: critical
+
+      - uid: alert-ai-down
+        title: AI Service caído
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2093
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              editorMode: code
+              expr: 'up{job="ai-service"} == 0'
+              instant: true
+              refId: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          summary: El servicio de predicción IA no responde
+        labels:
+          severity: high
+
+      - uid: alert-cpu-high
+        title: CPU host alta (>90% 10 min)
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2093
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              editorMode: code
+              expr: '100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 90'
+              instant: true
+              refId: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: OK
+        execErrState: OK
+        for: 10m
+        annotations:
+          summary: CPU del host sostenida por encima del 90%
+        labels:
+          severity: high
+
+      - uid: alert-disk-full
+        title: Disco >85%
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2093
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              editorMode: code
+              expr: '(1 - (node_filesystem_avail_bytes{mountpoint="/host"} / node_filesystem_size_bytes{mountpoint="/host"})) * 100 > 85'
+              instant: true
+              refId: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          summary: Sistema de archivos del host por encima del 85%
+        labels:
+          severity: high
+
+      - uid: alert-pg-connections
+        title: Postgres conexiones altas
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2093
+            relativeTimeRange: { from: 300, to: 0 }
+            model:
+              editorMode: code
+              expr: 'sum(pg_stat_activity_count) > 80'
+              instant: true
+              refId: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          summary: Más de 80 conexiones activas a PostgreSQL
+        labels:
+          severity: medium
+
+      - uid: alert-ideam-stale
+        title: IDEAM sin ingestar en 1h
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2093
+            relativeTimeRange: { from: 3600, to: 0 }
+            model:
+              editorMode: code
+              expr: '(time() - (max(manobi_ideam_polls_total) > bool 0) * timestamp(max(manobi_ideam_polls_total))) > 3600'
+              instant: true
+              refId: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: NoData
+        execErrState: OK
+        for: 15m
+        annotations:
+          summary: No hay polls IDEAM registrados en la última hora
+        labels:
+          severity: high
+
+      - uid: alert-engine-slow
+        title: Motor de alertas >10 min
+        condition: A
+        data:
+          - refId: A
+            datasourceUid: PBFA97CFB590B2093
+            relativeTimeRange: { from: 1800, to: 0 }
+            model:
+              editorMode: code
+              expr: 'histogram_quantile(0.95, sum by (le) (rate(manobi_engine_cycle_duration_seconds_bucket[30m]))) > 600'
+              instant: true
+              refId: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+        noDataState: OK
+        execErrState: OK
+        for: 15m
+        annotations:
+          summary: Ciclo del motor tarda más de 10 min (p95)
+        labels:
+          severity: medium

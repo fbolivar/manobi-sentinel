@@ -1,0 +1,181 @@
+{
+  "title": "Manobi Sentinel — Overview",
+  "uid": "manobi-overview",
+  "schemaVersion": 39,
+  "version": 2,
+  "refresh": "30s",
+  "tags": ["manobi", "pnn"],
+  "time": { "from": "now-24h", "to": "now" },
+  "timezone": "America/Bogota",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Alertas activas — ROJO",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "red" }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM alertas WHERE estado='activa' AND nivel='rojo';" }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Alertas activas — AMARILLO",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "yellow" }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM alertas WHERE estado='activa' AND nivel='amarillo';" }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Parques monitoreados",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM parques;" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Reglas activas",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM reglas_alerta WHERE activa;" }]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Eventos IDEAM 1h",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "purple" }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM eventos_climaticos WHERE creado_en >= NOW() - INTERVAL '1 hour' AND fuente LIKE 'IDEAM-%' AND fuente NOT LIKE 'IDEAM-SIM';" }]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Parques con contexto activo",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red" }, { "color": "yellow", "value": 20 }, { "color": "green", "value": 40 }] }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "textMode": "auto", "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM contexto_parque_cache WHERE updated_at >= NOW() - INTERVAL '30 minutes';" }]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Alertas generadas por hora (por nivel)",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 40 }, "unit": "short" } },
+      "targets": [{ "refId": "A", "format": "time_series", "rawSql": "SELECT DATE_TRUNC('hour', creado_en) AS time, nivel AS metric, COUNT(*) AS value FROM alertas WHERE $__timeFilter(creado_en) GROUP BY 1, 2 ORDER BY 1;" }]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Eventos IDEAM por tipo (ingesta cada 30 min)",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 15 }, "unit": "short" } },
+      "targets": [{ "refId": "A", "format": "time_series", "rawSql": "SELECT DATE_TRUNC('minute', creado_en) AS time, tipo AS metric, COUNT(*) AS value FROM eventos_climaticos WHERE $__timeFilter(creado_en) AND fuente LIKE 'IDEAM-%' AND fuente NOT LIKE 'IDEAM-SIM' GROUP BY 1, 2 ORDER BY 1;" }]
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Probabilidad IA — promedio por tipo",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100, "min": 0 } },
+      "targets": [{ "refId": "A", "format": "time_series", "rawSql": "SELECT DATE_TRUNC('minute', fecha) AS time, tipo AS metric, AVG(probabilidad) AS value FROM predicciones WHERE $__timeFilter(fecha) GROUP BY 1, 2 ORDER BY 1;" }]
+    },
+    {
+      "id": 21,
+      "type": "table",
+      "title": "Top 10 parques con más alertas (últimas 24h)",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT p.nombre AS parque, COUNT(a.id) AS alertas, COUNT(*) FILTER (WHERE a.nivel='rojo') AS rojo, COUNT(*) FILTER (WHERE a.nivel='amarillo') AS amarillo FROM alertas a JOIN parques p ON a.parque_id = p.id WHERE a.creado_en >= NOW() - INTERVAL '24 hours' GROUP BY p.nombre ORDER BY alertas DESC LIMIT 10;" }]
+    },
+    {
+      "id": 40,
+      "type": "timeseries",
+      "title": "HTTP req/s por ruta (API)",
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "targets": [{ "refId": "A", "expr": "sum by (route) (rate(manobi_http_requests_total[5m]))", "legendFormat": "{{route}}" }]
+    },
+    {
+      "id": 41,
+      "type": "timeseries",
+      "title": "HTTP latencia p95 (API)",
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [{ "refId": "A", "expr": "histogram_quantile(0.95, sum by (le, route) (rate(manobi_http_request_duration_seconds_bucket[5m])))", "legendFormat": "{{route}}" }]
+    },
+    {
+      "id": 42,
+      "type": "timeseries",
+      "title": "Duración ciclo motor de alertas (s)",
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        { "refId": "A", "expr": "histogram_quantile(0.5, sum by (le) (rate(manobi_engine_cycle_duration_seconds_bucket[30m])))", "legendFormat": "p50" },
+        { "refId": "B", "expr": "histogram_quantile(0.95, sum by (le) (rate(manobi_engine_cycle_duration_seconds_bucket[30m])))", "legendFormat": "p95" }
+      ]
+    },
+    {
+      "id": 43,
+      "type": "timeseries",
+      "title": "CPU host (node-exporter)",
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100, "min": 0 } },
+      "targets": [{ "refId": "A", "expr": "100 * (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[1m])))", "legendFormat": "CPU %" }]
+    },
+    {
+      "id": 44,
+      "type": "timeseries",
+      "title": "Memoria host usada (%)",
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "gridPos": { "x": 0, "y": 36, "w": 8, "h": 7 },
+      "fieldConfig": { "defaults": { "unit": "percent", "max": 100, "min": 0 } },
+      "targets": [{ "refId": "A", "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)", "legendFormat": "Mem %" }]
+    },
+    {
+      "id": 45,
+      "type": "timeseries",
+      "title": "PostgreSQL conexiones activas",
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "gridPos": { "x": 8, "y": 36, "w": 8, "h": 7 },
+      "targets": [{ "refId": "A", "expr": "sum(pg_stat_activity_count)", "legendFormat": "activas" }]
+    },
+    {
+      "id": 46,
+      "type": "timeseries",
+      "title": "Redis comandos/s",
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "gridPos": { "x": 16, "y": 36, "w": 8, "h": 7 },
+      "fieldConfig": { "defaults": { "unit": "ops" } },
+      "targets": [{ "refId": "A", "expr": "rate(redis_commands_processed_total[1m])", "legendFormat": "cmd/s" }]
+    },
+    {
+      "id": 30,
+      "type": "logs",
+      "title": "Logs del motor de alertas e IDEAM",
+      "datasource": { "type": "loki", "uid": "P8E80F9AEF21F6940" },
+      "gridPos": { "x": 0, "y": 43, "w": 24, "h": 10 },
+      "options": { "wrapLogMessage": true, "showTime": true, "sortOrder": "Descending" },
+      "targets": [{ "refId": "A", "expr": "{container=\"manobi-api\"} |~ \"AlertEngine|IDEAM|error|warn\"" }]
+    }
+  ]
+}

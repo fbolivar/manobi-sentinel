@@ -1,0 +1,86 @@
+{
+  "title": "Manobi Sentinel — Operativo PNN",
+  "uid": "manobi-operativo",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "tags": ["manobi", "operativo"],
+  "time": { "from": "now-7d", "to": "now" },
+  "timezone": "America/Bogota",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Alertas hoy",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"color":"green"},{"color":"yellow","value":10},{"color":"red","value":30}] }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM alertas WHERE creado_en >= CURRENT_DATE;" }]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Alertas semana",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM alertas WHERE creado_en >= NOW() - INTERVAL '7 days';" }]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Datos ingestados hoy",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "green" }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM eventos_climaticos WHERE creado_en >= CURRENT_DATE;" }]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Predicciones IA hoy",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "purple" }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT COUNT(*) AS value FROM predicciones WHERE fecha >= CURRENT_DATE;" }]
+    },
+    {
+      "id": 5, "type": "stat", "title": "Ciclo motor (seg)",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{"color":"green"},{"color":"yellow","value":60},{"color":"red","value":300}] }, "unit": "s" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT ROUND(EXTRACT(EPOCH FROM (MAX(updated_at) - MIN(updated_at))))::int AS value FROM contexto_parque_cache WHERE updated_at >= NOW() - INTERVAL '30 minutes';" }]
+    },
+    {
+      "id": 6, "type": "stat", "title": "Tamaño DB",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "orange" }, "unit": "decbytes" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT pg_database_size('manobi') AS value;" }]
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "Alertas por día (por nivel)",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 50 }, "unit": "short" } },
+      "targets": [{ "refId": "A", "format": "time_series", "rawSql": "SELECT DATE_TRUNC('day', creado_en) AS time, nivel AS metric, COUNT(*) AS value FROM alertas WHERE $__timeFilter(creado_en) GROUP BY 1, 2 ORDER BY 1;" }]
+    },
+    {
+      "id": 11, "type": "timeseries", "title": "Datos ingestados por tipo (por día)",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "line", "fillOpacity": 15 }, "unit": "short" } },
+      "targets": [{ "refId": "A", "format": "time_series", "rawSql": "SELECT DATE_TRUNC('day', creado_en) AS time, tipo AS metric, COUNT(*) AS value FROM eventos_climaticos WHERE $__timeFilter(creado_en) GROUP BY 1, 2 ORDER BY 1;" }]
+    },
+    {
+      "id": 20, "type": "table", "title": "Alertas por parque (semana)",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT p.nombre AS parque, p.nivel_riesgo AS riesgo, COUNT(a.id) AS alertas, COUNT(*) FILTER (WHERE a.nivel='rojo') AS rojas, COUNT(*) FILTER (WHERE a.nivel='amarillo') AS amarillas, ROUND(AVG(pr.probabilidad)::numeric,1) AS prob_ia_prom FROM parques p LEFT JOIN alertas a ON a.parque_id=p.id AND a.creado_en >= NOW() - INTERVAL '7 days' LEFT JOIN predicciones pr ON pr.parque_id=p.id AND pr.tipo='incendio' AND pr.fecha >= NOW() - INTERVAL '1 hour' GROUP BY p.nombre, p.nivel_riesgo HAVING COUNT(a.id) > 0 ORDER BY alertas DESC LIMIT 20;" }]
+    },
+    {
+      "id": 21, "type": "table", "title": "Estado de fuentes de datos",
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "PCC52D03280B7034C" },
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "targets": [{ "refId": "A", "format": "table", "rawSql": "SELECT CASE WHEN fuente LIKE 'IDEAM-%' THEN 'IDEAM' WHEN fuente LIKE 'NASA_FIRMS%' THEN 'NASA FIRMS' WHEN fuente LIKE 'FIRMS%' THEN 'NASA FIRMS' WHEN fuente LIKE 'ORORATECH%' THEN 'OroraTech' ELSE fuente END AS fuente, COUNT(*) AS eventos_24h, MAX(creado_en)::text AS ultima_ingesta, COUNT(DISTINCT tipo) AS tipos FROM eventos_climaticos WHERE creado_en >= NOW() - INTERVAL '24 hours' GROUP BY 1 ORDER BY eventos_24h DESC;" }]
+    }
+  ]
+}
