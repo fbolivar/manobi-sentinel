@@ -4,7 +4,7 @@ FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    if [ -f package-lock.json ]; then npm ci; else npm install; fi
+    npm install --legacy-peer-deps
 COPY . .
 ARG SKIP_TESTS=0
 RUN if [ "$SKIP_TESTS" = "1" ]; then echo "Skipping tests"; else npm test -- --ci --passWithNoTests; fi
