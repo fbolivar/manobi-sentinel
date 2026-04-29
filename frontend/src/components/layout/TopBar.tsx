@@ -94,35 +94,11 @@ export function TopBar() {
         {user?.rol === 'admin' && <NavLink to="/backups" className={linkCls}>Respaldos</NavLink>}
       </nav>
 
-      {/* Status — desktop */}
-      <div className="hidden lg:flex items-center gap-3 text-xs text-txt-muted">
-        <span className="flex items-center gap-1.5" title="Estado del API">
-          <Dot ok={apiOk} title="API" /> API
-        </span>
-        <span className="flex items-center gap-1.5" title={`Base de datos: ${dbOk ? 'OK' : 'Error'}`}>
-          <Dot ok={dbOk} title="DB" /> DB
-        </span>
-        <span className="flex items-center gap-1.5" title={`Redis: ${redisOk ? 'OK' : 'Error'}`}>
-          <Dot ok={redisOk} title="Redis" /> Redis
-        </span>
-        <span className="flex items-center gap-1.5" title={`IA: ${iaOk ? 'OK' : 'No disponible'}`}>
-          <Dot ok={iaOk} title="IA" /> IA
-        </span>
-        {ideamStatus.data && (
-          <span
-            className="flex items-center gap-1 border-l border-border-subtle pl-3 text-[10px] font-mono"
-            title={`IDEAM: último poll ${fmt(ideamStatus.data.ultimo_poll)} — ${ideamStatus.data.ultimo_total} eventos (${ideamStatus.data.ultimo_modo})`}
-          >
-            <span className={`inline-block h-1.5 w-1.5 rounded-full ${ideamStatus.data.ultimo_poll ? 'bg-pnn-blue' : 'bg-txt-muted'}`} />
-            IDEAM {fmt(ideamStatus.data.ultimo_poll)}
-          </span>
-        )}
-      </div>
+      {/* Status — solo visible para admin en hover sobre el dot del reloj */}
 
       {/* Right */}
       <div className="flex items-center gap-2 md:gap-4">
         <div className="md:hidden flex items-center gap-2">
-          <Dot ok={apiOk} />
           <span className="font-mono text-xs text-pnn-green font-semibold">{time}</span>
         </div>
         <div className="hidden md:block text-right leading-tight">
