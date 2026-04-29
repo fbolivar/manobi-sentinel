@@ -15,6 +15,9 @@ const ReglasPage = lazy(() => import('./pages/ReglasPage').then((m) => ({ defaul
 const UsuariosPage = lazy(() => import('./pages/UsuariosPage').then((m) => ({ default: m.UsuariosPage })));
 const HistoricoPage = lazy(() => import('./pages/HistoricoPage').then((m) => ({ default: m.HistoricoPage })));
 const BackupsPage = lazy(() => import('./pages/BackupsPage').then((m) => ({ default: m.BackupsPage })));
+const ParquesPage = lazy(() => import('./pages/ParquesPage').then((m) => ({ default: m.ParquesPage })));
+const EventosPage = lazy(() => import('./pages/EventosPage').then((m) => ({ default: m.EventosPage })));
+const AuditoriaPage = lazy(() => import('./pages/AuditoriaPage').then((m) => ({ default: m.AuditoriaPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -48,6 +51,9 @@ export function App() {
             <Route path="/usuarios" element={<Protected><UsuariosPage /></Protected>} />
             <Route path="/historico" element={<Protected><HistoricoPage /></Protected>} />
             <Route path="/backups" element={<Protected><BackupsPage /></Protected>} />
+            <Route path="/parques" element={<Protected><ParquesPage /></Protected>} />
+            <Route path="/eventos" element={<Protected><EventosPage /></Protected>} />
+            <Route path="/auditoria" element={<Protected><AuditoriaPage /></Protected>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>

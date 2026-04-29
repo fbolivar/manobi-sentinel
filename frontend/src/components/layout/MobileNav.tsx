@@ -4,15 +4,15 @@ import { useAuthStore } from '../../stores/auth.store';
 const items = [
   { to: '/dashboard', label: 'Mapa', icon: '🗺' },
   { to: '/historico', label: 'Alertas', icon: '🔔' },
+  { to: '/parques', label: 'Parques', icon: '🌿' },
+  { to: '/eventos', label: 'Eventos', icon: '🌦' },
   { to: '/reportes', label: 'Reportes', icon: '📄' },
-  { to: '/reglas', label: 'Reglas', icon: '⚙' },
-  { to: '/suscripciones', label: 'Notif.', icon: '📩' },
 ];
 
 export function MobileNav() {
   const user = useAuthStore((s) => s.user);
   const all = user?.rol === 'admin'
-    ? [...items, { to: '/usuarios', label: 'Usuarios', icon: '👤' }]
+    ? [...items, { to: '/usuarios', label: 'Usuarios', icon: '👤' }, { to: '/auditoria', label: 'Auditoría', icon: '🔍' }]
     : items;
 
   return (

@@ -47,10 +47,13 @@ export function TopBar() {
       <nav className="hidden md:flex items-center gap-1 mx-4 overflow-x-auto scrollbar-hide">
         <NavLink to="/dashboard" className={linkCls}>Dashboard</NavLink>
         <NavLink to="/historico" className={linkCls}>Histórico</NavLink>
+        <NavLink to="/parques" className={linkCls}>Parques</NavLink>
+        <NavLink to="/eventos" className={linkCls}>Eventos</NavLink>
         <NavLink to="/reportes" className={linkCls}>Reportes</NavLink>
         <NavLink to="/suscripciones" className={linkCls}>Suscripciones</NavLink>
         <NavLink to="/reglas" className={linkCls}>Reglas</NavLink>
         {user?.rol === 'admin' && <NavLink to="/usuarios" className={linkCls}>Usuarios</NavLink>}
+        {user?.rol === 'admin' && <NavLink to="/auditoria" className={linkCls}>Auditoría</NavLink>}
         {user?.rol === 'admin' && <NavLink to="/backups" className={linkCls}>Respaldos</NavLink>}
       </nav>
 
