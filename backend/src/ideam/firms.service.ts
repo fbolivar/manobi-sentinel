@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { firstValueFrom } from 'rxjs';
 import { EventosService } from '../eventos-climaticos/eventos.service';
 import { MetricsService } from '../metrics/metrics.service';
@@ -36,7 +35,8 @@ export class FirmsService {
     private readonly metrics: MetricsService,
   ) {}
 
-  @Cron(CronExpression.EVERY_HOUR, { timeZone: 'America/Bogota' })
+  // CRON desactivado: fuente de datos reemplazada por OroraTech (evita duplicidad)
+  // Para importar manualmente: POST /ideam/firms
   async poll(): Promise<{ insertados: number }> {
     let total = 0;
     for (const url of FIRMS_URLS) {

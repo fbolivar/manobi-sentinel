@@ -1,7 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { firstValueFrom } from 'rxjs';
 import { EventosService } from '../eventos-climaticos/eventos.service';
 import { MetricsService } from '../metrics/metrics.service';
@@ -61,7 +60,8 @@ export class IdeamService {
     private readonly metrics: MetricsService,
   ) {}
 
-  @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'America/Bogota' })
+  // CRON desactivado: fuente de datos reemplazada por OroraTech (evita duplicidad)
+  // Para importar manualmente: POST /ideam/poll
   async poll(): Promise<{ insertados: number; modo: string; porTipo?: Record<string, number> }> {
     const mode = this.cfg.get<string>('ideam.mode');
     let result: { insertados: number; modo: string; porTipo?: Record<string, number> };

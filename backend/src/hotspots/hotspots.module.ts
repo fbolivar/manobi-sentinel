@@ -6,7 +6,6 @@ import { EventosModule } from '../eventos-climaticos/eventos.module';
 import { AlertasModule } from '../alertas/alertas.module';
 import { HotspotsController } from './hotspots.controller';
 import { HotspotsService } from './hotspots.service';
-import { NasaFirmsService } from './nasa-firms.service';
 import { OroraTechService } from './ororatech.service';
 
 @Module({
@@ -17,7 +16,7 @@ import { OroraTechService } from './ororatech.service';
     AlertasModule,
   ],
   controllers: [HotspotsController],
-  providers: [HotspotsService, NasaFirmsService, OroraTechService],
+  providers: [HotspotsService, OroraTechService],
   exports: [HotspotsService],
 })
 export class HotspotsModule {}

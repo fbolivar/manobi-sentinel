@@ -6,7 +6,6 @@ import { Parque } from '../common/entities/parque.entity';
 import { EventosService } from '../eventos-climaticos/eventos.service';
 import { AlertasService } from '../alertas/alertas.service';
 import { MetricsService } from '../metrics/metrics.service';
-import { NasaFirmsService } from './nasa-firms.service';
 import { OroraTechService } from './ororatech.service';
 import { HotspotData } from './hotspot.interface';
 import { AlertsGateway } from '../alertas/alerts.gateway';
@@ -16,7 +15,6 @@ export class HotspotsService {
   private readonly log = new Logger('Hotspots');
 
   constructor(
-    private readonly firms: NasaFirmsService,
     private readonly orora: OroraTechService,
     private readonly eventos: EventosService,
     private readonly alertas: AlertasService,
@@ -28,22 +26,16 @@ export class HotspotsService {
 
   @Cron('0 */30 * * * *', { name: 'hotspots', timeZone: 'America/Bogota' })
   async poll() {
-    const [firms, orora] = await Promise.all([
-      this.firms.poll(),
-      this.orora.poll(),
-    ]);
-    const all = [...firms, ...orora];
-    this.log.log(`Hotspots: ${firms.length} FIRMS + ${orora.length} OroraTech = ${all.length}`);
+    const hotspots = await this.orora.poll();
+    this.log.log(`Hotspots OroraTech: ${hotspots.length}`);
 
-    if (all.length === 0) return { total: 0, alertas: 0 };
+    if (hotspots.length === 0) return { total: 0, alertas: 0 };
 
-    const inserted = await this.persistir(all);
-    const alertasGen = await this.evaluar(all);
+    const inserted = await this.persistir(hotspots);
+    const alertasGen = await this.evaluar(hotspots);
 
-    this.metrics.ideamEvents.inc({ tipo: 'hotspot_firms' }, firms.length);
-    this.metrics.ideamEvents.inc({ tipo: 'hotspot_orora' }, orora.length);
-
-    this.gateway.broadcastHotspots(all.length);
+    this.metrics.ideamEvents.inc({ tipo: 'hotspot_orora' }, hotspots.length);
+    this.gateway.broadcastHotspots(hotspots.length);
 
     return { total: inserted, alertas: alertasGen };
   }
