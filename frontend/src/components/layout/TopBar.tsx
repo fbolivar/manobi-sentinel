@@ -4,24 +4,58 @@ import { NavLink } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { useAuthStore } from '../../stores/auth.store';
 
+interface HealthData {
+  status: string;
+  checks?: { db: 'ok' | 'error'; redis: 'ok' | 'error'; ia: 'ok' | 'error' };
+}
+
+interface IdeamStatusData {
+  ideam: { ultimo_poll: string | null; ultimo_total: number; ultimo_modo: string; proximo_poll: string };
+  firms: { ultimo_poll: string | null; ultimo_total: number; proximo_poll: string };
+}
+
 function useClock() {
   const [now, setNow] = useState(new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
   return now;
 }
 
-function Dot({ ok }: { ok: boolean }) {
-  return <span className={`inline-block h-2 w-2 rounded-full ${ok ? 'bg-accent-green' : 'bg-accent-red animate-pulse'}`} />;
+function Dot({ ok, title }: { ok: boolean; title?: string }) {
+  return (
+    <span
+      title={title}
+      className={`inline-block h-2 w-2 rounded-full ${ok ? 'bg-accent-green' : 'bg-accent-red animate-pulse'}`}
+    />
+  );
+}
+
+function fmt(iso: string | null) {
+  if (!iso) return 'nunca';
+  return new Date(iso).toLocaleTimeString('es-CO', { hour12: false, timeZone: 'America/Bogota', hour: '2-digit', minute: '2-digit' });
 }
 
 export function TopBar() {
   const now = useClock();
   const { user, logout } = useAuthStore();
-  const apiHealth = useQuery({
+
+  const health = useQuery<HealthData>({
     queryKey: ['health'],
     queryFn: async () => (await api.get('/health', { baseURL: '/' })).data,
     refetchInterval: 15_000,
   });
+
+  const ideamStatus = useQuery<IdeamStatusData>({
+    queryKey: ['ideam-status'],
+    queryFn: async () => (await api.get('/ideam/status')).data,
+    refetchInterval: 60_000,
+    enabled: user?.rol === 'admin' || user?.rol === 'operador',
+  });
+
+  const checks = health.data?.checks;
+  const dbOk = checks?.db === 'ok';
+  const redisOk = checks?.redis === 'ok';
+  const iaOk = checks?.ia === 'ok';
+  const apiOk = health.isSuccess;
 
   const time = now.toLocaleTimeString('es-CO', { hour12: false, timeZone: 'America/Bogota' });
   const date = now.toLocaleDateString('es-CO', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
@@ -59,15 +93,35 @@ export function TopBar() {
 
       {/* Status — desktop */}
       <div className="hidden lg:flex items-center gap-3 text-xs text-txt-muted">
-        <span className="flex items-center gap-1.5"><Dot ok={apiHealth.isSuccess} /> API</span>
-        <span className="flex items-center gap-1.5"><Dot ok={apiHealth.isSuccess} /> DB</span>
-        <span className="flex items-center gap-1.5"><Dot ok={apiHealth.isSuccess} /> IA</span>
+        <span className="flex items-center gap-1.5" title="Estado del API">
+          <Dot ok={apiOk} title="API" /> API
+        </span>
+        <span className="flex items-center gap-1.5" title={`Base de datos: ${dbOk ? 'OK' : 'Error'}`}>
+          <Dot ok={dbOk} title="DB" /> DB
+        </span>
+        <span className="flex items-center gap-1.5" title={`Redis: ${redisOk ? 'OK' : 'Error'}`}>
+          <Dot ok={redisOk} title="Redis" /> Redis
+        </span>
+        <span className="flex items-center gap-1.5" title={`IA: ${iaOk ? 'OK' : 'No disponible'}`}>
+          <Dot ok={iaOk} title="IA" /> IA
+        </span>
+        {ideamStatus.data && (
+          <span
+            className="flex items-center gap-1 border-l border-border-subtle pl-3 text-[10px] font-mono"
+            title={`IDEAM: último poll ${fmt(ideamStatus.data.ideam.ultimo_poll)} (${ideamStatus.data.ideam.ultimo_total} eventos)\nFIRMS: último poll ${fmt(ideamStatus.data.firms.ultimo_poll)} (${ideamStatus.data.firms.ultimo_total} focos)`}
+          >
+            <span className={`inline-block h-1.5 w-1.5 rounded-full ${ideamStatus.data.ideam.ultimo_poll ? 'bg-pnn-blue' : 'bg-txt-muted'}`} />
+            IDEAM {fmt(ideamStatus.data.ideam.ultimo_poll)}
+            <span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-accent-red" />
+            FIRMS {fmt(ideamStatus.data.firms.ultimo_poll)}
+          </span>
+        )}
       </div>
 
       {/* Right */}
       <div className="flex items-center gap-2 md:gap-4">
         <div className="md:hidden flex items-center gap-2">
-          <Dot ok={apiHealth.isSuccess} />
+          <Dot ok={apiOk} />
           <span className="font-mono text-xs text-pnn-green font-semibold">{time}</span>
         </div>
         <div className="hidden md:block text-right leading-tight">

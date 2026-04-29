@@ -18,9 +18,17 @@ interface FirmsRow {
   acq_time: string; satellite: string; daynight: string;
 }
 
+export interface FirmsStatus {
+  ultimo_poll: string | null;
+  ultimo_total: number;
+  proximo_poll: string;
+}
+
 @Injectable()
 export class FirmsService {
   private readonly log = new Logger('FIRMS');
+  private lastPollAt: Date | null = null;
+  private lastPollTotal = 0;
 
   constructor(
     private readonly http: HttpService,
@@ -41,7 +49,20 @@ export class FirmsService {
     }
     this.log.log(`FIRMS: ${total} focos de calor en Colombia`);
     this.metrics.ideamEvents.inc({ tipo: 'firms_incendio' }, total);
+    this.lastPollAt = new Date();
+    this.lastPollTotal = total;
     return { insertados: total };
+  }
+
+  status(): FirmsStatus {
+    const next = new Date();
+    next.setMinutes(0, 0, 0);
+    next.setHours(next.getHours() + 1);
+    return {
+      ultimo_poll: this.lastPollAt?.toISOString() ?? null,
+      ultimo_total: this.lastPollTotal,
+      proximo_poll: next.toISOString(),
+    };
   }
 
   private async pollUrl(url: string): Promise<number> {

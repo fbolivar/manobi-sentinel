@@ -28,12 +28,23 @@ interface SodaDataset {
   max?: number;
 }
 
+export interface PollStatus {
+  ultimo_poll: string | null;
+  ultimo_total: number;
+  ultimo_modo: string;
+  proximo_poll: string;
+}
+
 @Injectable()
 export class IdeamService {
   private readonly log = new Logger('IDEAM');
   private readonly SODA_BASE = 'https://www.datos.gov.co/resource';
   private readonly SODA_LIMIT = 500;
   private readonly SODA_SINCE_HOURS = 48;
+
+  private lastPollAt: Date | null = null;
+  private lastPollTotal = 0;
+  private lastPollModo = 'simulado';
 
   private readonly DATASETS: SodaDataset[] = [
     { id: 'sbwg-7ju4', tipo: 'temperatura', unidad: '°C',   min: -10, max: 55 },
@@ -53,22 +64,44 @@ export class IdeamService {
   @Cron(CronExpression.EVERY_30_MINUTES, { timeZone: 'America/Bogota' })
   async poll(): Promise<{ insertados: number; modo: string; porTipo?: Record<string, number> }> {
     const mode = this.cfg.get<string>('ideam.mode');
+    let result: { insertados: number; modo: string; porTipo?: Record<string, number> };
+
     if (mode === 'real') {
       try {
         const { total, porTipo } = await this.pollReal();
         this.log.log(`IDEAM real: ${total} eventos (${JSON.stringify(porTipo)})`);
         this.metrics.ideamPolls.inc({ modo: 'real', status: 'ok' });
         for (const [tipo, n] of Object.entries(porTipo)) this.metrics.ideamEvents.inc({ tipo }, n);
-        return { insertados: total, modo: 'real', porTipo };
+        result = { insertados: total, modo: 'real', porTipo };
       } catch (e) {
         this.log.warn(`IDEAM real falló (${(e as Error).message}), fallback a simulado`);
         this.metrics.ideamPolls.inc({ modo: 'real', status: 'error' });
+        const n = await this.pollSimulado();
+        this.metrics.ideamPolls.inc({ modo: 'simulado', status: 'ok' });
+        result = { insertados: n, modo: 'simulado-fallback' };
       }
+    } else {
+      const n = await this.pollSimulado();
+      this.metrics.ideamPolls.inc({ modo: 'simulado', status: 'ok' });
+      this.metrics.ideamEvents.inc({ tipo: 'lluvia' }, n);
+      result = { insertados: n, modo: 'simulado' };
     }
-    const n = await this.pollSimulado();
-    this.metrics.ideamPolls.inc({ modo: 'simulado', status: 'ok' });
-    this.metrics.ideamEvents.inc({ tipo: 'lluvia' }, n);
-    return { insertados: n, modo: 'simulado' };
+
+    this.lastPollAt = new Date();
+    this.lastPollTotal = result.insertados;
+    this.lastPollModo = result.modo;
+    return result;
+  }
+
+  status(): PollStatus {
+    const next = new Date();
+    next.setMinutes(next.getMinutes() + 30 - (next.getMinutes() % 30), 0, 0);
+    return {
+      ultimo_poll: this.lastPollAt?.toISOString() ?? null,
+      ultimo_total: this.lastPollTotal,
+      ultimo_modo: this.lastPollModo,
+      proximo_poll: next.toISOString(),
+    };
   }
 
   private async pollReal(): Promise<{ total: number; porTipo: Record<string, number> }> {

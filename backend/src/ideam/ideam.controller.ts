@@ -1,4 +1,4 @@
-import { Controller, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -15,6 +15,14 @@ export class IdeamController {
     private readonly svc: IdeamService,
     private readonly firms: FirmsService,
   ) {}
+
+  @Get('status')
+  status() {
+    return {
+      ideam: this.svc.status(),
+      firms: this.firms.status(),
+    };
+  }
 
   @Roles('admin', 'operador')
   @Post('poll')

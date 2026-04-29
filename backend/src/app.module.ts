@@ -1,12 +1,16 @@
-import { Controller, Get, Module } from '@nestjs/common';
+import { Controller, Get, Inject, Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { HttpModule, HttpService } from '@nestjs/axios';
+import { DataSource } from 'typeorm';
+import Redis from 'ioredis';
+import { firstValueFrom } from 'rxjs';
 
 import configuration from './config/configuration';
 import { DatabaseModule } from './database/database.module';
-import { RedisModule } from './redis/redis.module';
+import { RedisModule, REDIS_CLIENT } from './redis/redis.module';
 import { CommonModule } from './common/common.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
@@ -29,9 +33,38 @@ import { Public } from './common/decorators/public.decorator';
 
 @Controller('health')
 class HealthController {
+  constructor(
+    private readonly ds: DataSource,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly http: HttpService,
+    private readonly cfg: ConfigService,
+  ) {}
+
   @Public()
   @Get()
-  check() { return { status: 'ok', service: 'manobi-api', ts: new Date().toISOString() }; }
+  async check() {
+    const [db, red, ia] = await Promise.allSettled([
+      this.ds.query('SELECT 1'),
+      this.redis.ping(),
+      firstValueFrom(
+        this.http.get('/health', {
+          baseURL: this.cfg.get<string>('ia.baseUrl') ?? 'http://manobi-ia:8000',
+          timeout: 3000,
+        }),
+      ),
+    ]);
+
+    return {
+      status: 'ok',
+      service: 'manobi-api',
+      ts: new Date().toISOString(),
+      checks: {
+        db: db.status === 'fulfilled' ? 'ok' : 'error',
+        redis: red.status === 'fulfilled' ? 'ok' : 'error',
+        ia: ia.status === 'fulfilled' ? 'ok' : 'error',
+      },
+    };
+  }
 }
 
 @Module({
@@ -41,6 +74,7 @@ class HealthController {
     DatabaseModule,
     RedisModule,
     CommonModule,
+    HttpModule,
     TypeOrmModule.forFeature([Usuario]),
     AuthModule,
     UsersModule,
