@@ -110,6 +110,7 @@ export class EventosService {
         temperatura_c: Number(cached.temperatura_c ?? 25),
         humedad_relativa: Number(cached.humedad_relativa ?? 75),
         dias_sin_lluvia: Number(cached.dias_sin_lluvia ?? 2),
+        nivel_rio_mt: cached.nivel_rio_mt != null ? Number(cached.nivel_rio_mt) : null,
         'parque.nivel_riesgo': (cached.nivel_riesgo as string) ?? null,
       };
     }
@@ -147,6 +148,9 @@ export class EventosService {
            (SELECT AVG(intensidad) FROM cercanos_tyh WHERE tipo='humedad'),
            (SELECT MIN((datos_raw->>'humedad_relativa')::numeric) FROM dentro)
          ) AS humedad_relativa,
+         (SELECT AVG(intensidad) FROM eventos_climaticos e2, pq
+           WHERE e2.tipo='nivel_rio' AND e2.fecha >= NOW() - INTERVAL '6 hours'
+             AND ST_DWithin(pq.geometria, e2.ubicacion, 0.5)) AS nivel_rio_mt,
          (SELECT nivel_riesgo FROM pq) AS parque_nivel_riesgo`,
       [parqueId],
     ))[0] as Record<string, string>;
@@ -167,20 +171,22 @@ export class EventosService {
       dias_sin_lluvia: Number(dsl?.n ?? 0) === 0
         ? 2
         : Math.max(0, Math.floor(Number(dsl?.dias ?? 0))),
+      nivel_rio_mt: row?.nivel_rio_mt != null ? Number(row.nivel_rio_mt) : null,
       'parque.nivel_riesgo': row?.parque_nivel_riesgo ?? null,
     };
 
     await this.ds.query(
-      `INSERT INTO contexto_parque_cache (parque_id, lluvia_24h_mm, lluvia_1h_mm, viento_kmh, temperatura_c, humedad_relativa, dias_sin_lluvia, nivel_riesgo, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+      `INSERT INTO contexto_parque_cache (parque_id, lluvia_24h_mm, lluvia_1h_mm, viento_kmh, temperatura_c, humedad_relativa, dias_sin_lluvia, nivel_riesgo, nivel_rio_mt, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW())
        ON CONFLICT (parque_id) DO UPDATE SET
          lluvia_24h_mm=EXCLUDED.lluvia_24h_mm, lluvia_1h_mm=EXCLUDED.lluvia_1h_mm,
          viento_kmh=EXCLUDED.viento_kmh, temperatura_c=EXCLUDED.temperatura_c,
          humedad_relativa=EXCLUDED.humedad_relativa, dias_sin_lluvia=EXCLUDED.dias_sin_lluvia,
-         nivel_riesgo=EXCLUDED.nivel_riesgo, updated_at=NOW()`,
+         nivel_riesgo=EXCLUDED.nivel_riesgo, nivel_rio_mt=EXCLUDED.nivel_rio_mt,
+         updated_at=NOW()`,
       [parqueId, ctx.lluvia_24h_mm, ctx.lluvia_1h_mm, ctx.viento_kmh,
        ctx.temperatura_c, ctx.humedad_relativa, ctx.dias_sin_lluvia,
-       ctx['parque.nivel_riesgo']],
+       ctx['parque.nivel_riesgo'], ctx.nivel_rio_mt],
     ).catch(() => {});
 
     return ctx;

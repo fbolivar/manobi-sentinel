@@ -7,7 +7,7 @@ import type { EventoClimatico } from '../types';
 
 type TipoEvento = EventoClimatico['tipo'];
 
-const TIPOS: TipoEvento[] = ['lluvia', 'incendio', 'viento', 'sequia', 'inundacion', 'temperatura', 'humedad', 'presion'];
+const TIPOS: TipoEvento[] = ['lluvia', 'incendio', 'viento', 'sequia', 'inundacion', 'temperatura', 'humedad', 'presion', 'nivel_rio'];
 
 const TIPO_CHIP: Record<TipoEvento, string> = {
   lluvia:      'chip-verde',
@@ -18,6 +18,7 @@ const TIPO_CHIP: Record<TipoEvento, string> = {
   temperatura: 'chip-amarillo',
   humedad:     'chip-verde',
   presion:     'chip-verde',
+  nivel_rio:   'chip-amarillo',
 };
 
 const TIPO_ICON: Record<TipoEvento, string> = {
@@ -29,6 +30,7 @@ const TIPO_ICON: Record<TipoEvento, string> = {
   temperatura: '🌡',
   humedad:     '💧',
   presion:     '🔵',
+  nivel_rio:   '🏞',
 };
 
 const TIPO_BAR_COLOR: Record<TipoEvento, string> = {
@@ -40,6 +42,7 @@ const TIPO_BAR_COLOR: Record<TipoEvento, string> = {
   temperatura: 'bg-yellow-500',
   humedad:     'bg-teal-400',
   presion:     'bg-indigo-400',
+  nivel_rio:   'bg-sky-600',
 };
 
 function toCsv(rows: EventoClimatico[]): string {

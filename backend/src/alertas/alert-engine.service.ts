@@ -83,6 +83,7 @@ export class AlertEngineService implements OnApplicationBootstrap {
         parque_id: parque.id,
         lluvia_24h_mm: base.lluvia_24h_mm,
         lluvia_1h_mm: base.lluvia_1h_mm,
+        nivel_rio_mt: base.nivel_rio_mt ?? null,
         nivel_riesgo: parque.nivel_riesgo ?? 'medio',
       }),
     ]);

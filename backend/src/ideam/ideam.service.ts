@@ -1,5 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { EventosService } from '../eventos-climaticos/eventos.service';
@@ -16,7 +17,7 @@ import { MetricsService } from '../metrics/metrics.service';
  * En `real`, si la llamada falla (red caída / estructura cambió), cae
  * automáticamente al modo simulado para no dejar el motor sin datos.
  */
-type IdeamTipo = 'lluvia' | 'viento' | 'temperatura' | 'humedad' | 'presion';
+type IdeamTipo = 'lluvia' | 'viento' | 'temperatura' | 'humedad' | 'presion' | 'nivel_rio';
 
 interface SodaDataset {
   id: string;
@@ -51,6 +52,8 @@ export class IdeamService {
     { id: 's54a-sgyg', tipo: 'lluvia',      unidad: 'mm',   min: 0,   max: 500 },
     { id: 'sgfv-3yp8', tipo: 'viento',      unidad: 'km/h', factor: 3.6, min: 0, max: 150 },
     { id: '62tk-nxj5', tipo: 'presion',     unidad: 'hPa',  min: 500, max: 1100 },
+    // Nivel hidrométrico instantáneo de ríos — datos.gov.co/resource/bdmn-sqnh
+    { id: 'bdmn-sqnh', tipo: 'nivel_rio',   unidad: 'mt',   min: 0,   max: 30 },
   ];
 
   constructor(
@@ -60,8 +63,8 @@ export class IdeamService {
     private readonly metrics: MetricsService,
   ) {}
 
-  // CRON desactivado: fuente de datos reemplazada por OroraTech (evita duplicidad)
-  // Para importar manualmente: POST /ideam/poll
+  // CRON cada 30 min — datos meteorológicos e hidrológicos (no duplica OroraTech que es solo fuego)
+  @Cron(CronExpression.EVERY_30_MINUTES, { name: 'ideam-poll', timeZone: 'America/Bogota' })
   async poll(): Promise<{ insertados: number; modo: string; porTipo?: Record<string, number> }> {
     const mode = this.cfg.get<string>('ideam.mode');
     let result: { insertados: number; modo: string; porTipo?: Record<string, number> };

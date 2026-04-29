@@ -1,6 +1,6 @@
 import { IsDateString, IsIn, IsNumber, IsObject, IsOptional, IsString } from 'class-validator';
 
-const TIPOS = ['lluvia', 'incendio', 'viento', 'sequia', 'inundacion', 'temperatura', 'humedad', 'presion'] as const;
+const TIPOS = ['lluvia', 'incendio', 'viento', 'sequia', 'inundacion', 'temperatura', 'humedad', 'presion', 'nivel_rio'] as const;
 
 export class CreateEventoDto {
   @IsIn(TIPOS) tipo!: (typeof TIPOS)[number];

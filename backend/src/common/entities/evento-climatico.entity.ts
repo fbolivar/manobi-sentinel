@@ -1,6 +1,6 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-export type TipoEvento = 'lluvia' | 'incendio' | 'viento' | 'sequia' | 'inundacion' | 'temperatura' | 'humedad' | 'presion';
+export type TipoEvento = 'lluvia' | 'incendio' | 'viento' | 'sequia' | 'inundacion' | 'temperatura' | 'humedad' | 'presion' | 'nivel_rio';
 
 @Entity({ name: 'eventos_climaticos' })
 export class EventoClimatico {
