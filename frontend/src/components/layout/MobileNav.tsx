@@ -4,9 +4,9 @@ import { useAuthStore } from '../../stores/auth.store';
 const items = [
   { to: '/dashboard', label: 'Mapa', icon: '🗺' },
   { to: '/historico', label: 'Alertas', icon: '🔔' },
+  { to: '/estado-parques', label: 'Estado', icon: '🛡' },
   { to: '/parques', label: 'Parques', icon: '🌿' },
   { to: '/eventos', label: 'Eventos', icon: '🌦' },
-  { to: '/reportes', label: 'Reportes', icon: '📄' },
 ];
 
 export function MobileNav() {

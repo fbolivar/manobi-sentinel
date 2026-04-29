@@ -81,6 +81,7 @@ export function TopBar() {
       <nav className="hidden md:flex items-center gap-1 mx-4 overflow-x-auto scrollbar-hide">
         <NavLink to="/dashboard" className={linkCls}>Dashboard</NavLink>
         <NavLink to="/historico" className={linkCls}>Histórico</NavLink>
+        <NavLink to="/estado-parques" className={linkCls}>Estado Áreas</NavLink>
         <NavLink to="/parques" className={linkCls}>Parques</NavLink>
         <NavLink to="/eventos" className={linkCls}>Eventos</NavLink>
         <NavLink to="/reportes" className={linkCls}>Reportes</NavLink>
