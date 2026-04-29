@@ -1,11 +1,69 @@
-import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/auth.store';
 
 function useClock() {
   const [now, setNow] = useState(new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
   return now;
+}
+
+const SISTEMA_ROUTES = ['/historico', '/eventos', '/suscripciones', '/reglas', '/usuarios', '/auditoria', '/backups'];
+
+function SistemaMenu({ user }: { user: { rol: string } | null }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const isActive = SISTEMA_ROUTES.some((r) => location.pathname.startsWith(r));
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const itemCls = 'flex items-center gap-2 px-4 py-2 text-xs text-txt-muted hover:text-txt hover:bg-bg-surface2 transition whitespace-nowrap';
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium tracking-wide transition whitespace-nowrap ${
+          isActive
+            ? 'bg-pnn-green/10 text-pnn-green-dark border border-pnn-green/30'
+            : 'text-txt-muted hover:text-txt hover:bg-bg-surface2'
+        }`}
+      >
+        Sistema
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          className={`transition-transform ${open ? 'rotate-180' : ''}`}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          className="absolute top-full left-0 mt-1 bg-bg-surface border border-border-subtle rounded-lg shadow-lg z-50 py-1 min-w-[170px]"
+          onClick={() => setOpen(false)}
+        >
+          <NavLink to="/historico" className={itemCls}>Histórico</NavLink>
+          <NavLink to="/eventos" className={itemCls}>Eventos</NavLink>
+          <NavLink to="/suscripciones" className={itemCls}>Suscripciones</NavLink>
+          <NavLink to="/reglas" className={itemCls}>Reglas</NavLink>
+          {(user?.rol === 'admin' || user?.rol === 'operador') && (
+            <div className="border-t border-border-subtle my-1" />
+          )}
+          {user?.rol === 'admin' && <NavLink to="/usuarios" className={itemCls}>Usuarios</NavLink>}
+          {user?.rol === 'admin' && <NavLink to="/auditoria" className={itemCls}>Auditoría</NavLink>}
+          {user?.rol === 'admin' && <NavLink to="/backups" className={itemCls}>Respaldos</NavLink>}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function TopBar() {
@@ -35,16 +93,10 @@ export function TopBar() {
       {/* Nav — desktop */}
       <nav className="hidden md:flex items-center gap-1 mx-4 overflow-x-auto scrollbar-hide">
         <NavLink to="/dashboard" className={linkCls}>Dashboard</NavLink>
-        <NavLink to="/historico" className={linkCls}>Histórico</NavLink>
         <NavLink to="/estado-parques" className={linkCls}>Estado Áreas</NavLink>
         <NavLink to="/parques" className={linkCls}>Parques</NavLink>
-        <NavLink to="/eventos" className={linkCls}>Eventos</NavLink>
         <NavLink to="/reportes" className={linkCls}>Reportes</NavLink>
-        <NavLink to="/suscripciones" className={linkCls}>Suscripciones</NavLink>
-        <NavLink to="/reglas" className={linkCls}>Reglas</NavLink>
-        {user?.rol === 'admin' && <NavLink to="/usuarios" className={linkCls}>Usuarios</NavLink>}
-        {user?.rol === 'admin' && <NavLink to="/auditoria" className={linkCls}>Auditoría</NavLink>}
-        {user?.rol === 'admin' && <NavLink to="/backups" className={linkCls}>Respaldos</NavLink>}
+        <SistemaMenu user={user} />
       </nav>
 
       {/* Right */}
