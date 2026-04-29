@@ -34,7 +34,7 @@ export interface Alerta {
 
 export interface EventoClimatico {
   id: string;
-  tipo: 'lluvia' | 'incendio' | 'viento' | 'sequia' | 'inundacion';
+  tipo: 'lluvia' | 'incendio' | 'viento' | 'sequia' | 'inundacion' | 'temperatura' | 'humedad' | 'presion';
   intensidad: number | null;
   unidad: string | null;
   fecha: string;

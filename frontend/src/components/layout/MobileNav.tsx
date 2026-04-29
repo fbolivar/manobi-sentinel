@@ -2,17 +2,18 @@ import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../stores/auth.store';
 
 const items = [
-  { to: '/dashboard', label: 'Mapa', icon: '🗺' },
-  { to: '/historico', label: 'Alertas', icon: '🔔' },
-  { to: '/estado-parques', label: 'Estado', icon: '🛡' },
-  { to: '/parques', label: 'Parques', icon: '🌿' },
-  { to: '/eventos', label: 'Eventos', icon: '🌦' },
+  { to: '/dashboard',      label: 'Mapa',    icon: '🗺' },
+  { to: '/historico',      label: 'Alertas', icon: '🔔' },
+  { to: '/estado-parques', label: 'Estado',  icon: '🛡' },
+  { to: '/parques',        label: 'Parques', icon: '🌿' },
+  { to: '/reportes',       label: 'Reportes',icon: '📄' },
 ];
 
 export function MobileNav() {
   const user = useAuthStore((s) => s.user);
+  // Usuarios y Auditoría son funciones administrativas de escritorio; no se incluyen en nav móvil
   const all = user?.rol === 'admin'
-    ? [...items, { to: '/usuarios', label: 'Usuarios', icon: '👤' }, { to: '/auditoria', label: 'Auditoría', icon: '🔍' }]
+    ? [...items, { to: '/reglas', label: 'Reglas', icon: '⚙️' }]
     : items;
 
   return (

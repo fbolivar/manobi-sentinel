@@ -7,30 +7,39 @@ import type { EventoClimatico } from '../types';
 
 type TipoEvento = EventoClimatico['tipo'];
 
-const TIPOS: TipoEvento[] = ['lluvia', 'incendio', 'viento', 'sequia', 'inundacion'];
+const TIPOS: TipoEvento[] = ['lluvia', 'incendio', 'viento', 'sequia', 'inundacion', 'temperatura', 'humedad', 'presion'];
 
 const TIPO_CHIP: Record<TipoEvento, string> = {
-  lluvia: 'chip-verde',
-  incendio: 'chip-rojo',
-  viento: 'chip-amarillo',
-  sequia: 'chip-rojo',
-  inundacion: 'chip-amarillo',
+  lluvia:      'chip-verde',
+  incendio:    'chip-rojo',
+  viento:      'chip-amarillo',
+  sequia:      'chip-rojo',
+  inundacion:  'chip-amarillo',
+  temperatura: 'chip-amarillo',
+  humedad:     'chip-verde',
+  presion:     'chip-verde',
 };
 
 const TIPO_ICON: Record<TipoEvento, string> = {
-  lluvia: '🌧',
-  incendio: '🔥',
-  viento: '💨',
-  sequia: '☀️',
-  inundacion: '🌊',
+  lluvia:      '🌧',
+  incendio:    '🔥',
+  viento:      '💨',
+  sequia:      '☀️',
+  inundacion:  '🌊',
+  temperatura: '🌡',
+  humedad:     '💧',
+  presion:     '🔵',
 };
 
 const TIPO_BAR_COLOR: Record<TipoEvento, string> = {
-  lluvia: 'bg-blue-400',
-  incendio: 'bg-red-500',
-  viento: 'bg-amber-400',
-  sequia: 'bg-orange-500',
-  inundacion: 'bg-cyan-500',
+  lluvia:      'bg-blue-400',
+  incendio:    'bg-red-500',
+  viento:      'bg-amber-400',
+  sequia:      'bg-orange-500',
+  inundacion:  'bg-cyan-500',
+  temperatura: 'bg-yellow-500',
+  humedad:     'bg-teal-400',
+  presion:     'bg-indigo-400',
 };
 
 function toCsv(rows: EventoClimatico[]): string {
