@@ -1,20 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { NavLink } from 'react-router-dom';
-import { api } from '../../lib/api';
 import { useAuthStore } from '../../stores/auth.store';
-
-interface HealthData {
-  status: string;
-  checks?: { db: 'ok' | 'error'; redis: 'ok' | 'error'; ia: 'ok' | 'error' };
-}
-
-interface IdeamStatusData {
-  ultimo_poll: string | null;
-  ultimo_total: number;
-  ultimo_modo: string;
-  proximo_poll: string;
-}
 
 function useClock() {
   const [now, setNow] = useState(new Date());
@@ -22,42 +8,9 @@ function useClock() {
   return now;
 }
 
-function Dot({ ok, title }: { ok: boolean; title?: string }) {
-  return (
-    <span
-      title={title}
-      className={`inline-block h-2 w-2 rounded-full ${ok ? 'bg-accent-green' : 'bg-accent-red animate-pulse'}`}
-    />
-  );
-}
-
-function fmt(iso: string | null) {
-  if (!iso) return 'nunca';
-  return new Date(iso).toLocaleTimeString('es-CO', { hour12: false, timeZone: 'America/Bogota', hour: '2-digit', minute: '2-digit' });
-}
-
 export function TopBar() {
   const now = useClock();
   const { user, logout } = useAuthStore();
-
-  const health = useQuery<HealthData>({
-    queryKey: ['health'],
-    queryFn: async () => (await api.get('/health', { baseURL: '/' })).data,
-    refetchInterval: 15_000,
-  });
-
-  const ideamStatus = useQuery<IdeamStatusData>({
-    queryKey: ['ideam-status'],
-    queryFn: async () => (await api.get('/ideam/status')).data,
-    refetchInterval: 60_000,
-    enabled: user?.rol === 'admin' || user?.rol === 'operador',
-  });
-
-  const checks = health.data?.checks;
-  const dbOk = checks?.db === 'ok';
-  const redisOk = checks?.redis === 'ok';
-  const iaOk = checks?.ia === 'ok';
-  const apiOk = health.isSuccess;
 
   const time = now.toLocaleTimeString('es-CO', { hour12: false, timeZone: 'America/Bogota' });
   const date = now.toLocaleDateString('es-CO', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
@@ -94,11 +47,9 @@ export function TopBar() {
         {user?.rol === 'admin' && <NavLink to="/backups" className={linkCls}>Respaldos</NavLink>}
       </nav>
 
-      {/* Status — solo visible para admin en hover sobre el dot del reloj */}
-
       {/* Right */}
       <div className="flex items-center gap-2 md:gap-4">
-        <div className="md:hidden flex items-center gap-2">
+        <div className="md:hidden">
           <span className="font-mono text-xs text-pnn-green font-semibold">{time}</span>
         </div>
         <div className="hidden md:block text-right leading-tight">
