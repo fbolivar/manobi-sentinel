@@ -19,11 +19,11 @@ export interface BurntAreaFeature {
 
 interface OroraBurntProps {
   id: number;
-  area: number;              // in ha cuando unit_area=ha
+  area: number;
   pre_time: string;
   post_time: string;
   severity: string;
-  confidence: number;        // 0-1
+  confidence: number; // 0-1
   product_type: string;
   mean_dnbr: number;
   mean_dndvi: number;
@@ -37,7 +37,6 @@ interface OroraBurntFeature {
 }
 interface OroraBurntGeoJSON { type: string; features: OroraBurntFeature[] }
 
-// Formato date para OroraTech: 'YYYY-MM-DD-hhmm'
 function toOroraDate(iso: string): string {
   const d = new Date(iso);
   const yyyy = d.getUTCFullYear();
@@ -48,9 +47,28 @@ function toOroraDate(iso: string): string {
   return `${yyyy}-${mm}-${dd}-${hh}${min}`;
 }
 
+/** Aproxima el centroide como promedio de las coordenadas del anillo exterior. */
+function polygonCentroid(geom: { type: string; coordinates: unknown }): [number, number] | null {
+  try {
+    let ring: number[][];
+    if (geom.type === 'Polygon') {
+      ring = (geom.coordinates as number[][][])[0];
+    } else if (geom.type === 'MultiPolygon') {
+      ring = (geom.coordinates as number[][][][])[0][0];
+    } else {
+      return null;
+    }
+    const lon = ring.reduce((s, c) => s + c[0], 0) / ring.length;
+    const lat = ring.reduce((s, c) => s + c[1], 0) / ring.length;
+    return [lon, lat];
+  } catch {
+    return null;
+  }
+}
+
 const cache = new Map<string, { data: BurntAreaFeature[]; expires: number }>();
 const TTL_MS = 6 * 60 * 60 * 1000;
-const MAX_MINUTES = 180 * 24 * 60; // 180 días máximo por petición
+const MAX_MINUTES = 180 * 24 * 60;
 
 @Injectable()
 export class BurntAreasService {
@@ -79,9 +97,7 @@ export class BurntAreasService {
   private async fetchFromOrora(desde: string, hasta: string): Promise<BurntAreaFeature[]> {
     if (!this.apiKey) { this.log.warn('ORORATECH_API_KEY no configurado'); return []; }
 
-    const desdeMs = new Date(desde).getTime();
-    const hastaMs = new Date(hasta).getTime();
-    const minutes = Math.min(Math.ceil((hastaMs - desdeMs) / 60_000), MAX_MINUTES);
+    const minutes = Math.min(Math.ceil((new Date(hasta).getTime() - new Date(desde).getTime()) / 60_000), MAX_MINUTES);
     const date = toOroraDate(hasta);
 
     try {
@@ -89,13 +105,7 @@ export class BurntAreasService {
         `${this.baseUrl}/burnt_areas/`,
         {
           timeout: 60_000,
-          params: {
-            xmin: -79, ymin: -4, xmax: -67, ymax: 13,
-            minutes,
-            date,
-            unit_area: 'ha',
-            select: 'shape',
-          },
+          params: { xmin: -79, ymin: -4, xmax: -67, ymax: 13, minutes, date, unit_area: 'ha', select: 'shape' },
           headers: { apikey: this.apiKey },
         },
       ));
@@ -107,52 +117,58 @@ export class BurntAreasService {
       return await this.enrichWithParques(raw);
     } catch (e) {
       this.log.error(`Error OroraTech burnt_areas: ${(e as Error).message}`);
-      return [];
+      throw e;
     }
   }
 
   private async enrichWithParques(raw: OroraBurntFeature[]): Promise<BurntAreaFeature[]> {
-    const result: BurntAreaFeature[] = [];
+    // Computar centroides en TypeScript (sin DB) para cada polígono
+    const centroids: { idx: number; lon: number; lat: number }[] = [];
+    raw.forEach((f, idx) => {
+      if (!f.geometry) return;
+      const c = polygonCentroid(f.geometry as { type: string; coordinates: unknown });
+      if (c) centroids.push({ idx, lon: c[0], lat: c[1] });
+    });
 
-    // Procesar en batches para no saturar PostgreSQL con 7k consultas
-    const BATCH = 50;
-    for (let i = 0; i < raw.length; i += BATCH) {
-      const batch = raw.slice(i, i + BATCH);
-      await Promise.all(batch.map(async (f) => {
-        const p = f.properties;
-        let parqueId: string | null = null;
-        let parqueNombre: string | null = null;
-
-        if (f.geometry?.type === 'Polygon' || f.geometry?.type === 'MultiPolygon') {
-          try {
-            const rows = await this.ds.query<{ id: string; nombre: string }[]>(
-              `SELECT p.id, p.nombre
-               FROM parques p
-               WHERE p.geometria IS NOT NULL
-                 AND ST_Intersects(p.geometria, ST_SetSRID(ST_GeomFromGeoJSON($1), 4326))
-               LIMIT 1`,
-              [JSON.stringify(f.geometry)],
-            );
-            if (rows.length > 0) { parqueId = rows[0].id; parqueNombre = rows[0].nombre; }
-          } catch { /* geometría inválida */ }
-        }
-
-        result.push({
-          id: p.id,
-          area_ha: Math.round(p.area * 100) / 100,
-          pre_time: p.pre_time,
-          post_time: p.post_time,
-          severity: p.severity ?? 'unknown',
-          confidence: Math.round(p.confidence * 100),
-          product_type: p.product_type ?? 'unknown',
-          mean_dnbr: Math.round(p.mean_dnbr * 10000) / 10000,
-          parque_id: parqueId,
-          parque_nombre: parqueNombre,
-        });
-      }));
+    // Una sola query bulk: pasar todos los centroides como JSON y hacer ST_Within contra parques
+    const parqueMap = new Map<number, { id: string; nombre: string }>();
+    if (centroids.length > 0) {
+      try {
+        const rows = await this.ds.query<{ idx: number; id: string; nombre: string }[]>(
+          `WITH pts AS (
+             SELECT (value->>'idx')::int AS idx,
+                    ST_SetSRID(ST_MakePoint((value->>'lon')::float, (value->>'lat')::float), 4326) AS geom
+             FROM json_array_elements($1::json)
+           )
+           SELECT pts.idx, p.id, p.nombre
+           FROM pts
+           JOIN parques p ON p.geometria IS NOT NULL
+             AND ST_Within(pts.geom, p.geometria)`,
+          [JSON.stringify(centroids)],
+        );
+        rows.forEach((r) => parqueMap.set(Number(r.idx), { id: r.id, nombre: r.nombre }));
+        this.log.log(`Enriquecimiento: ${parqueMap.size} de ${raw.length} dentro de PNN`);
+      } catch (e) {
+        this.log.warn(`Enriquecimiento PostGIS falló: ${(e as Error).message} — se omite parque`);
+      }
     }
 
-    return result;
+    return raw.map((f, idx) => {
+      const p = f.properties;
+      const parque = parqueMap.get(idx) ?? null;
+      return {
+        id: p.id,
+        area_ha: Math.round(p.area * 100) / 100,
+        pre_time: p.pre_time,
+        post_time: p.post_time,
+        severity: p.severity ?? 'unknown',
+        confidence: Math.round(p.confidence * 100),
+        product_type: p.product_type ?? 'unknown',
+        mean_dnbr: Math.round(p.mean_dnbr * 10000) / 10000,
+        parque_id: parque?.id ?? null,
+        parque_nombre: parque?.nombre ?? null,
+      };
+    });
   }
 
   summarize(features: BurntAreaFeature[]) {
@@ -167,7 +183,6 @@ export class BurntAreasService {
       cur.ha += f.area_ha;
       cur.count++;
       porParque.set(key, cur);
-
       porSeveridad[f.severity] = (porSeveridad[f.severity] ?? 0) + 1;
     });
 
