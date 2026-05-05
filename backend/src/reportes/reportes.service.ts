@@ -9,6 +9,9 @@ import { MINIO_CLIENT } from './minio.provider';
 import { alertasToCsv } from './generators/csv.generator';
 import { alertasToXlsx } from './generators/xlsx.generator';
 import { alertasToPdf } from './generators/pdf.generator';
+import { incendioToPdf, IncendioReporteParams } from './generators/incendio-pdf.generator';
+
+export { IncendioReporteParams };
 
 export interface ReportParams {
   desde?: string;
@@ -126,6 +129,29 @@ export class ReportesService {
       ruta_minio: objectName,
     });
     this.log.log(`Reporte ${formato} generado: ${bucket}/${objectName} (${buf.length} bytes, ${alertas.length} alertas)`);
+    return saved;
+  }
+
+  async generarIncendio(usuarioId: string, params: IncendioReporteParams): Promise<Reporte> {
+    const buf = await incendioToPdf(params);
+    const bucket = this.cfg.get<string>('minio.bucketReportes')!;
+    const num = String(params.numero_seguimiento).padStart(3, '0');
+    const objectName = `incendio_seguimiento_${num}_${Date.now()}.pdf`;
+    try {
+      await this.minio.putObject(bucket, objectName, buf, buf.length, { 'Content-Type': 'application/pdf' });
+    } catch (e) {
+      const msg = (e as Error).message;
+      this.log.error(`MinIO putObject falló (${bucket}/${objectName}): ${msg}`);
+      throw new InternalServerErrorException(`No se pudo guardar el reporte en el almacenamiento (${msg})`);
+    }
+    const saved = await this.repo.save({
+      tipo: `Seguimiento ${num} — Incendio Forestal`,
+      formato: 'pdf',
+      generado_por: usuarioId,
+      parametros: params as unknown as Record<string, unknown>,
+      ruta_minio: objectName,
+    });
+    this.log.log(`Reporte incendio generado: ${bucket}/${objectName} (${buf.length} bytes)`);
     return saved;
   }
 }
