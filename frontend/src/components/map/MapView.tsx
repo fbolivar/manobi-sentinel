@@ -9,43 +9,28 @@ import XYZ from 'ol/source/XYZ';
 import VectorSource from 'ol/source/Vector';
 import GeoJSON from 'ol/format/GeoJSON';
 import { Feature } from 'ol';
-import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
 import { Style, Fill, Stroke, Circle as CircleStyle } from 'ol/style';
 import { api } from '../../lib/api';
 import { useMapStore } from '../../stores/map.store';
-import type { EventoClimatico } from '../../types';
 
-const NIVEL_FILL = { alto: 'rgba(229,57,53,0.3)', medio: 'rgba(249,168,37,0.25)', bajo: 'rgba(133,180,37,0.2)' } as const;
-const NIVEL_STROKE = { alto: '#E53935', medio: '#F9A825', bajo: '#85B425' } as const;
-
-function styleFor(feature: any) {
-  const nivel = (feature.get('nivel_riesgo') as 'alto' | 'medio' | 'bajo') ?? 'bajo';
+function styleFor(_feature: unknown) {
   return new Style({
-    fill: new Fill({ color: NIVEL_FILL[nivel] ?? NIVEL_FILL.bajo }),
-    stroke: new Stroke({ color: NIVEL_STROKE[nivel] ?? NIVEL_STROKE.bajo, width: 1.5 }),
+    fill: new Fill({ color: 'rgba(133,180,37,0.07)' }),
+    stroke: new Stroke({ color: '#85B425', width: 1.5 }),
   });
 }
-
-const eventoStyle = (tipo: string) => new Style({
-  image: new CircleStyle({
-    radius: 5,
-    fill: new Fill({ color: tipo === 'lluvia' ? '#0069B4' : tipo === 'incendio' ? '#E53935' : '#F9A825' }),
-    stroke: new Stroke({ color: '#fff', width: 1 }),
-  }),
-});
 
 export function MapView() {
   const mapEl = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
   const parquesRef = useRef<VectorLayer<VectorSource> | null>(null);
-  const eventosRef = useRef<VectorLayer<VectorSource> | null>(null);
   const hotspotsRef = useRef<VectorLayer<VectorSource> | null>(null);
   const [ready, setReady] = useState(false);
-  const [layers, setLayers] = useState({ base: true, parques: true, eventos: true, hotspots: true });
+  const [layers, setLayers] = useState({ base: true, parques: true, hotspots: true });
   const [selected, setSelected] = useState<{ nombre: string; region?: string; nivel?: string; frp?: number; confianza?: number; fuente?: string; fecha?: string } | null>(null);
 
-  // Filtros de fecha para hotspots y eventos
+  // Filtros de fecha para hotspots
   const [periodo, setPeriodo] = useState<'6' | '12' | '24' | '48' | '72' | '168' | 'custom'>('24');
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
@@ -54,17 +39,10 @@ export function MapView() {
     ? { desde: desde || undefined, hasta: hasta || undefined }
     : { hours: periodo };
 
-  const eventosHours = periodo === 'custom' ? '168' : periodo;
-
   const parques = useQuery({
     queryKey: ['parques-geojson'],
     queryFn: async () => (await api.get('/parques/geojson')).data,
     staleTime: 5 * 60_000,
-  });
-  const eventos = useQuery<EventoClimatico[]>({
-    queryKey: ['eventos-map', eventosHours],
-    queryFn: async () => (await api.get('/eventos-climaticos', { params: { hours: eventosHours, limit: 2000 } })).data,
-    refetchInterval: 60_000,
   });
   const hotspotsQ = useQuery({
     queryKey: ['hotspots-map', hotspotsParams],
@@ -76,7 +54,6 @@ export function MapView() {
   useEffect(() => {
     if (!mapEl.current || mapRef.current) return;
     parquesRef.current = new VectorLayer({ source: new VectorSource(), style: styleFor, zIndex: 2 });
-    eventosRef.current = new VectorLayer({ source: new VectorSource(), zIndex: 3 });
     hotspotsRef.current = new VectorLayer({
       source: new VectorSource(),
       zIndex: 5,
@@ -103,7 +80,7 @@ export function MapView() {
             : new XYZ({ url: '/tiles/osm/{z}/{x}/{y}.png', maxZoom: 19, attributions: '© OpenStreetMap contributors · via Manobi Sentinel' }),
           zIndex: 0,
         }),
-        parquesRef.current, eventosRef.current, hotspotsRef.current!,
+        parquesRef.current, hotspotsRef.current!,
       ],
       view: new View({ center: fromLonLat([-73.5, 4.5]), zoom: 5.2 }),
     });
@@ -146,19 +123,6 @@ export function MapView() {
   }, [ready, parques.data]);
 
   useEffect(() => {
-    if (!ready || !eventosRef.current || !eventos.data) return;
-    const src = eventosRef.current.getSource()!;
-    src.clear();
-    eventos.data.forEach((e) => {
-      const coords = (e as unknown as { ubicacion?: { coordinates?: number[] } }).ubicacion?.coordinates;
-      if (!coords) return;
-      const f = new Feature({ geometry: new Point(fromLonLat(coords)) });
-      f.setStyle(eventoStyle(e.tipo));
-      src.addFeature(f);
-    });
-  }, [ready, eventos.data]);
-
-  useEffect(() => {
     if (!ready || !hotspotsRef.current || !hotspotsQ.data) return;
     const src = hotspotsRef.current.getSource();
     if (!src) return;
@@ -171,7 +135,6 @@ export function MapView() {
     if (!mapRef.current) return;
     mapRef.current.getLayers().item(0)?.setVisible(layers.base);
     parquesRef.current?.setVisible(layers.parques);
-    eventosRef.current?.setVisible(layers.eventos);
     hotspotsRef.current?.setVisible(layers.hotspots);
   }, [layers]);
 
@@ -200,12 +163,12 @@ export function MapView() {
       {/* Panel de capas — top-right */}
       <div className="absolute top-2 right-2 md:top-3 md:right-3 panel p-2.5 text-xs space-y-1.5 z-10 min-w-[150px] md:min-w-[180px]">
         <div className="text-[10px] font-semibold text-txt-muted uppercase tracking-wider mb-1">Capas</div>
-        {(['base', 'parques', 'eventos', 'hotspots'] as const).map((k) => (
+        {(['base', 'parques', 'hotspots'] as const).map((k) => (
           <label key={k} className="flex items-center gap-2 cursor-pointer py-0.5">
             <input type="checkbox" className="h-4 w-4 md:h-3.5 md:w-3.5" checked={layers[k]}
               onChange={(e) => setLayers((s) => ({ ...s, [k]: e.target.checked }))} />
             <span className="capitalize text-xs text-txt">
-              {k === 'hotspots' ? 'Puntos de calor' : k === 'base' ? 'Base' : k === 'parques' ? 'Parques' : 'Eventos'}
+              {k === 'hotspots' ? 'Puntos de calor' : k === 'base' ? 'Base' : 'Parques'}
             </span>
           </label>
         ))}
@@ -253,16 +216,8 @@ export function MapView() {
           </div>
         )}
         <div className="text-[9px] text-txt-muted font-mono">
-          {hotspotsQ.data?.features?.length ?? 0} puntos · {eventos.data?.length ?? 0} eventos
+          {hotspotsQ.data?.features?.length ?? 0} puntos de calor
         </div>
-      </div>
-
-      {/* Leyenda nivel de riesgo — bottom-right */}
-      <div className="absolute bottom-2 right-2 md:bottom-3 md:right-3 panel p-2 text-[10px] font-mono z-10 hidden md:block">
-        <div className="text-white/50 mb-1">NIVEL DE RIESGO</div>
-        <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-sm" style={{background:NIVEL_FILL.alto, border:`1px solid ${NIVEL_STROKE.alto}`}}/>Alto</div>
-        <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-sm" style={{background:NIVEL_FILL.medio, border:`1px solid ${NIVEL_STROKE.medio}`}}/>Medio</div>
-        <div className="flex items-center gap-2"><span className="h-3 w-3 rounded-sm" style={{background:NIVEL_FILL.bajo, border:`1px solid ${NIVEL_STROKE.bajo}`}}/>Bajo</div>
       </div>
 
       {selected && (

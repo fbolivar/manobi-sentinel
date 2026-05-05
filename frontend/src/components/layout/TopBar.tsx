@@ -8,7 +8,7 @@ function useClock() {
   return now;
 }
 
-const SISTEMA_ROUTES = ['/historico', '/eventos', '/suscripciones', '/reglas', '/usuarios', '/auditoria', '/backups'];
+const SISTEMA_ROUTES = ['/historico', '/eventos', '/alertas-hidro', '/suscripciones', '/reglas', '/usuarios', '/auditoria', '/backups', '/integraciones'];
 
 function SistemaMenu({ user }: { user: { rol: string } | null }) {
   const [open, setOpen] = useState(false);
@@ -52,6 +52,7 @@ function SistemaMenu({ user }: { user: { rol: string } | null }) {
         >
           <NavLink to="/historico" className={itemCls}>Histórico</NavLink>
           <NavLink to="/eventos" className={itemCls}>Eventos</NavLink>
+          <NavLink to="/alertas-hidro" className={itemCls}>Alertas Hidrometeorológicas</NavLink>
           <NavLink to="/suscripciones" className={itemCls}>Suscripciones</NavLink>
           <NavLink to="/reglas" className={itemCls}>Reglas</NavLink>
           {(user?.rol === 'admin' || user?.rol === 'operador') && (
@@ -60,6 +61,7 @@ function SistemaMenu({ user }: { user: { rol: string } | null }) {
           {user?.rol === 'admin' && <NavLink to="/usuarios" className={itemCls}>Usuarios</NavLink>}
           {user?.rol === 'admin' && <NavLink to="/auditoria" className={itemCls}>Auditoría</NavLink>}
           {user?.rol === 'admin' && <NavLink to="/backups" className={itemCls}>Respaldos</NavLink>}
+          {user?.rol === 'admin' && <NavLink to="/integraciones" className={itemCls}>Integraciones</NavLink>}
         </div>
       )}
     </div>

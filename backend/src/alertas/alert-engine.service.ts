@@ -46,6 +46,7 @@ export class AlertEngineService implements OnApplicationBootstrap {
     const started = Date.now();
     let nuevas = 0;
     let dedup = 0;
+    let cerradas = 0;
     let status: 'ok' | 'error' = 'ok';
 
     try {
@@ -53,7 +54,7 @@ export class AlertEngineService implements OnApplicationBootstrap {
       for (let i = 0; i < parques.length; i += BATCH) {
         const slice = parques.slice(i, i + BATCH);
         const results = await Promise.all(slice.map((p) => this.evaluarParque(p, reglas)));
-        for (const r of results) { nuevas += r.nuevas; dedup += r.dedup; }
+        for (const r of results) { nuevas += r.nuevas; dedup += r.dedup; cerradas += r.cerradas; }
       }
     } catch (e) {
       status = 'error';
@@ -62,13 +63,14 @@ export class AlertEngineService implements OnApplicationBootstrap {
       const secs = (Date.now() - started) / 1000;
       this.metrics.engineCycles.inc({ status });
       this.metrics.engineDuration.observe(secs);
-      this.log.log(`Evaluación terminada en ${Math.round(secs)}s. Nuevas: ${nuevas}, dedup: ${dedup}`);
+      this.log.log(`Evaluación terminada en ${Math.round(secs)}s. Nuevas: ${nuevas}, dedup: ${dedup}, cerradas: ${cerradas}`);
     }
   }
 
-  private async evaluarParque(parque: Parque, reglas: ReglaAlerta[]): Promise<{ nuevas: number; dedup: number }> {
+  private async evaluarParque(parque: Parque, reglas: ReglaAlerta[]): Promise<{ nuevas: number; dedup: number; cerradas: number }> {
     let nuevas = 0;
     let dedup = 0;
+    let cerradas = 0;
     const base = await this.eventos.contextoPorParque(parque.id);
 
     const [predIncendio, predInundacion] = await Promise.all([
@@ -100,12 +102,16 @@ export class AlertEngineService implements OnApplicationBootstrap {
       topografia: 'ladera',
     };
 
+    const tiposFired = new Set<string>();
+
     for (const regla of reglas) {
       try {
         if (!evaluar(regla.condicion, ctx)) continue;
         const nivel = regla.nivel_resultante ?? 'amarillo';
+        const tipo = regla.nombre ?? 'alerta';
+        tiposFired.add(tipo);
         const res = await this.alertas.createWithDedup({
-          tipo: regla.nombre ?? 'alerta',
+          tipo,
           nivel,
           descripcion: regla.accion ?? null as unknown as string,
           fecha_inicio: new Date().toISOString(),
@@ -121,6 +127,20 @@ export class AlertEngineService implements OnApplicationBootstrap {
         this.log.error(`Regla ${regla.id} parque ${parque.id}: ${(e as Error).message}`);
       }
     }
-    return { nuevas, dedup };
+
+    // Cerrar automáticamente alertas del motor cuya condición ya no se cumple
+    try {
+      const activas = await this.alertas.findActivas(parque.id);
+      for (const alerta of activas) {
+        if (alerta.generada_por === 'motor_reglas' && !tiposFired.has(alerta.tipo)) {
+          await this.alertas.cerrar(alerta.id, { estado: 'cerrada' });
+          cerradas++;
+        }
+      }
+    } catch (e) {
+      this.log.error(`Auto-close parque ${parque.id}: ${(e as Error).message}`);
+    }
+
+    return { nuevas, dedup, cerradas };
   }
 }

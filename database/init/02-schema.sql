@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS parques (
 -- ------------------ EVENTOS CLIMÁTICOS ------------------
 CREATE TABLE IF NOT EXISTS eventos_climaticos (
     id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tipo          VARCHAR(50) CHECK (tipo IN ('lluvia','incendio','viento','sequia','inundacion')),
+    tipo          VARCHAR(50) CHECK (tipo IN ('lluvia','incendio','viento','sequia','inundacion','temperatura','humedad','presion','nivel_rio')),
     intensidad    NUMERIC,
     unidad        VARCHAR(20),
     fecha         TIMESTAMP NOT NULL,

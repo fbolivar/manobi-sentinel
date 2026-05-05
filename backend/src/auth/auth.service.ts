@@ -3,8 +3,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import Redis from 'ioredis';
 import { Inject } from '@nestjs/common';
@@ -40,6 +40,7 @@ export class AuthService {
     private readonly cfg: ConfigService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     private readonly notif: NotificacionesService,
+    @InjectDataSource() private readonly ds: DataSource,
   ) {}
 
   private lockKey(email: string) { return `auth:lock:${email.toLowerCase()}`; }
@@ -47,8 +48,47 @@ export class AuthService {
   private refreshKey(jti: string) { return `auth:refresh:${jti}`; }
   private otpKey(challengeId: string) { return `auth:otp:${challengeId}`; }
 
-  private otpRequired(): boolean {
+  private readonly OTP_CACHE_KEY = 'config:otp_required';
+  private readonly OTP_CACHE_TTL = 300; // 5 min
+
+  private async otpRequired(): Promise<boolean> {
+    const cached = await this.redis.get(this.OTP_CACHE_KEY);
+    if (cached !== null) return cached === 'true';
+    try {
+      const rows = await this.ds.query<{ valor: { enabled: boolean } }[]>(
+        `SELECT valor FROM configuracion WHERE clave = 'otp_required' LIMIT 1`,
+      );
+      if (rows[0]?.valor?.enabled !== undefined) {
+        const val = rows[0].valor.enabled;
+        await this.redis.set(this.OTP_CACHE_KEY, val ? 'true' : 'false', 'EX', this.OTP_CACHE_TTL);
+        return val;
+      }
+    } catch { /* DB no disponible — usar env var */ }
     return (this.cfg.get<string>('OTP_REQUIRED') ?? 'true') !== 'false';
+  }
+
+  async get2faStatus(): Promise<{ enabled: boolean; source: 'db' | 'env' }> {
+    try {
+      const rows = await this.ds.query<{ valor: { enabled: boolean } }[]>(
+        `SELECT valor FROM configuracion WHERE clave = 'otp_required' LIMIT 1`,
+      );
+      if (rows[0]?.valor?.enabled !== undefined) {
+        return { enabled: rows[0].valor.enabled, source: 'db' };
+      }
+    } catch { /* fallback */ }
+    const envVal = (this.cfg.get<string>('OTP_REQUIRED') ?? 'true') !== 'false';
+    return { enabled: envVal, source: 'env' };
+  }
+
+  async set2faStatus(enabled: boolean): Promise<{ ok: boolean; enabled: boolean }> {
+    await this.ds.query(
+      `INSERT INTO configuracion (clave, valor, updated_at) VALUES ('otp_required', $1::jsonb, NOW())
+       ON CONFLICT (clave) DO UPDATE SET valor = $1::jsonb, updated_at = NOW()`,
+      [JSON.stringify({ enabled })],
+    );
+    await this.redis.set(this.OTP_CACHE_KEY, enabled ? 'true' : 'false', 'EX', this.OTP_CACHE_TTL);
+    this.log.log(`2FA ${enabled ? 'habilitado' : 'deshabilitado'} por admin`);
+    return { ok: true, enabled };
   }
 
   private hashCode(code: string): string {
@@ -87,8 +127,8 @@ export class AuthService {
 
     await this.redis.del(this.attemptsKey(email));
 
-    // Si OTP está deshabilitado globalmente (env OTP_REQUIRED=false), emitir tokens directo.
-    if (!this.otpRequired()) {
+    // Si OTP está deshabilitado globalmente, emitir tokens directo.
+    if (!await this.otpRequired()) {
       user.ultimo_login = new Date();
       await this.users.save(user);
       return this.issueTokens(user, meta);

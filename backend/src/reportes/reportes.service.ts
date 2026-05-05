@@ -2,7 +2,7 @@ import { Inject, Injectable, InternalServerErrorException, Logger, NotFoundExcep
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Client as MinioClient } from 'minio';
-import { Between, In, Repository } from 'typeorm';
+import { Between, In, Not, Repository } from 'typeorm';
 import { Alerta } from '../common/entities/alerta.entity';
 import { Reporte } from '../common/entities/reporte.entity';
 import { MINIO_CLIENT } from './minio.provider';
@@ -88,10 +88,10 @@ export class ReportesService {
     usuarioId: string,
     params: ReportParams,
   ): Promise<Reporte> {
-    const where: Record<string, unknown> = {};
-    if (params.desde && params.hasta) where!['fecha_inicio'] = Between(new Date(params.desde), new Date(params.hasta));
-    if (params.niveles?.length) where!['nivel'] = In(params.niveles);
-    if (params.parque_id) where!['parque_id'] = params.parque_id;
+    const where: Record<string, unknown> = { estado: Not('falsa') };
+    if (params.desde && params.hasta) where['fecha_inicio'] = Between(new Date(params.desde), new Date(params.hasta));
+    if (params.niveles?.length) where['nivel'] = In(params.niveles);
+    if (params.parque_id) where['parque_id'] = params.parque_id;
 
     const alertasRaw = await this.alertas.find({
       where, relations: { parque: true },

@@ -25,12 +25,13 @@ export class AlertasController {
     @Query('limit') limit?: string,
     @Query('parque_id') parqueId?: string,
     @Query('nivel') nivel?: string,
+    @Query('estado') estado?: string,
     @Query('desde') desde?: string,
     @Query('hasta') hasta?: string,
   ) {
     return this.svc.findHistorico({
       limit: limit ? Number(limit) : 200,
-      parqueId, nivel, desde, hasta,
+      parqueId, nivel, estado, desde, hasta,
     });
   }
 

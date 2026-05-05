@@ -22,6 +22,9 @@ export class ParquesController {
   @Get('geojson')
   geojson(@Query('region') region?: string) { return this.svc.asGeoJSON(region); }
 
+  @Get('contexto-resumen')
+  contextoResumen() { return this.svc.contextoResumen(); }
+
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) { return this.svc.findOne(id); }
 

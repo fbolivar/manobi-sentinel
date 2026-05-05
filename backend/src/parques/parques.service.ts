@@ -85,4 +85,16 @@ export class ParquesService {
     await this.repo.delete({ id });
     return { ok: true };
   }
+
+  async contextoResumen(): Promise<Record<string, unknown>[]> {
+    return this.ds.query(
+      `SELECT p.id,
+              c.lluvia_24h_mm, c.lluvia_1h_mm, c.temperatura_c,
+              c.humedad_relativa, c.viento_kmh, c.nivel_rio_mt,
+              c.updated_at
+         FROM parques p
+         LEFT JOIN contexto_parque_cache c ON c.parque_id = p.id
+        ORDER BY p.nombre`,
+    );
+  }
 }

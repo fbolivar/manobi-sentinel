@@ -19,6 +19,8 @@ const ParquesPage = lazy(() => import('./pages/ParquesPage').then((m) => ({ defa
 const EventosPage = lazy(() => import('./pages/EventosPage').then((m) => ({ default: m.EventosPage })));
 const AuditoriaPage = lazy(() => import('./pages/AuditoriaPage').then((m) => ({ default: m.AuditoriaPage })));
 const EstadoParquesPage = lazy(() => import('./pages/EstadoParquesPage').then((m) => ({ default: m.EstadoParquesPage })));
+const IntegracionesPage = lazy(() => import('./pages/IntegracionesPage').then((m) => ({ default: m.IntegracionesPage })));
+const AlertasHidroPage = lazy(() => import('./pages/AlertasHidroPage').then((m) => ({ default: m.AlertasHidroPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -56,6 +58,8 @@ export function App() {
             <Route path="/eventos" element={<Protected><EventosPage /></Protected>} />
             <Route path="/auditoria" element={<Protected><AuditoriaPage /></Protected>} />
             <Route path="/estado-parques" element={<Protected><EstadoParquesPage /></Protected>} />
+            <Route path="/integraciones" element={<Protected><IntegracionesPage /></Protected>} />
+            <Route path="/alertas-hidro" element={<Protected><AlertasHidroPage /></Protected>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>

@@ -1,10 +1,18 @@
-import { Body, Controller, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { IsBoolean } from 'class-validator';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
 import { LoginDto, LogoutDto, RefreshDto, ResendOtpDto, VerifyOtpDto } from './dto/login.dto';
+
+class Set2faStatusDto {
+  @IsBoolean()
+  enabled!: boolean;
+}
 
 @ApiTags('auth')
 @Controller('auth')
@@ -52,4 +60,16 @@ export class AuthController {
   @Post('logout')
   @HttpCode(200)
   logout(@Body() dto: LogoutDto) { return this.auth.logout(dto?.refresh_token); }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('2fa-status')
+  get2faStatus() { return this.auth.get2faStatus(); }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Put('2fa-status')
+  @HttpCode(200)
+  set2faStatus(@Body() dto: Set2faStatusDto) { return this.auth.set2faStatus(dto.enabled); }
 }

@@ -1,4 +1,5 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { Client as MinioClient } from 'minio';
 import { hostname } from 'node:os';
@@ -160,15 +161,29 @@ export class BackupsService {
   }
 
   // ---------------------------------------------------------------------------
-  // Descargar .pnnc desde MinIO
+  // Descargar .pnnc desde MinIO — streaming directo a la respuesta HTTP
   // ---------------------------------------------------------------------------
+  async descargarStream(id: string, res: Response): Promise<void> {
+    try {
+      const stat = await this.minio.statObject(BACKUPS_BUCKET, id);
+      const stream = await this.minio.getObject(BACKUPS_BUCKET, id);
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(id)}"`);
+      res.setHeader('Content-Length', stat.size);
+      stream.pipe(res);
+    } catch {
+      res.status(404).json({ message: `Backup no encontrado: ${id}` });
+    }
+  }
+
+  // Descarga en memoria — usada internamente por verificar/restaurar
   async descargarBuffer(id: string): Promise<Buffer> {
     try {
       const stream = await this.minio.getObject(BACKUPS_BUCKET, id);
       const chunks: Buffer[] = [];
       for await (const c of stream) chunks.push(c as Buffer);
       return Buffer.concat(chunks);
-    } catch (e) {
+    } catch {
       throw new NotFoundException(`Backup no encontrado: ${id}`);
     }
   }

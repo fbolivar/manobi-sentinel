@@ -39,12 +39,13 @@ export class EventosService {
     }
   }
 
-  findRecent(hours = 24, tipo?: string, limit = 500) {
+  findRecent(hours = 24, tipo?: string, limit = 500, fuente?: string) {
     const qb = this.repo.createQueryBuilder('e')
       .where(`e.fecha >= NOW() - (:hours || ' hours')::interval`, { hours })
       .orderBy('e.fecha', 'DESC')
       .limit(Math.min(Math.max(limit, 1), 5000));
     if (tipo) qb.andWhere('e.tipo = :tipo', { tipo });
+    if (fuente) qb.andWhere('e.fuente LIKE :fuentePattern', { fuentePattern: `${fuente}%` });
     return qb.getMany();
   }
 
@@ -157,7 +158,10 @@ export class EventosService {
          COUNT(*) AS n,
          EXTRACT(EPOCH FROM (NOW() - MAX(e.fecha)))/86400 AS dias
        FROM eventos_climaticos e, parques p
-       WHERE p.id = $1 AND e.tipo = 'lluvia' AND ST_Intersects(p.geometria, e.ubicacion)`,
+       WHERE p.id = $1
+         AND e.tipo = 'lluvia'
+         AND e.fecha >= NOW() - INTERVAL '30 days'
+         AND ST_Intersects(p.geometria, e.ubicacion)`,
       [parqueId],
     ))[0] as { n: string; dias: string | null };
     const ctx = {

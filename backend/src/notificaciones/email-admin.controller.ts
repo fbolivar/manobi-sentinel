@@ -6,15 +6,18 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEmail, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import * as nodemailer from 'nodemailer';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { NotificacionesService } from './notificaciones.service';
+import { NotificacionesService, SmtpConfig } from './notificaciones.service';
 import { EmailQueueService } from './email-queue.service';
 import { EmailTemplatesService } from './email-templates.service';
 
@@ -25,6 +28,43 @@ class TestEmailDto {
   @IsOptional()
   @IsString()
   mensaje?: string;
+}
+
+class SaveSmtpConfigDto {
+  @IsString() host!: string;
+  @IsNumber() @Type(() => Number) port!: number;
+  @IsOptional() @IsBoolean() secure?: boolean;
+  @IsOptional() @IsString() user?: string;
+  @IsOptional() @IsString() pass?: string;
+  @IsOptional() @IsString() from?: string;
+}
+
+class TestCustomSmtpDto {
+  @IsString()
+  host!: string;
+
+  @IsNumber()
+  @Type(() => Number)
+  port!: number;
+
+  @IsOptional()
+  @IsBoolean()
+  secure?: boolean;
+
+  @IsOptional()
+  @IsString()
+  user?: string;
+
+  @IsOptional()
+  @IsString()
+  pass?: string;
+
+  @IsOptional()
+  @IsString()
+  from?: string;
+
+  @IsEmail()
+  destinatario!: string;
 }
 
 @ApiTags('email-admin')
@@ -68,6 +108,73 @@ export class EmailAdminController {
       priority: 1,
     });
     return { ok: true, jobId: job.id, destinatario: dto.destinatario };
+  }
+
+  /**
+   * GET /api/email/config
+   * Devuelve la configuración SMTP activa (contraseña enmascarada).
+   */
+  @Get('config')
+  @ApiOperation({ summary: 'Obtiene la configuración SMTP activa (sólo admin)' })
+  getConfig() {
+    return this.notif.getConfig();
+  }
+
+  /**
+   * PUT /api/email/config
+   * Guarda una nueva configuración SMTP en DB y recarga el transporter en caliente.
+   */
+  @Put('config')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Guarda y aplica configuración SMTP (sólo admin)' })
+  async saveConfig(@Body() dto: SaveSmtpConfigDto) {
+    await this.notif.saveConfig({
+      host: dto.host,
+      port: dto.port,
+      secure: dto.secure ?? false,
+      user: dto.user ?? '',
+      pass: dto.pass ?? '',
+      from: dto.from ?? dto.user ?? '',
+    });
+    return { ok: true, message: 'Configuración SMTP guardada y aplicada correctamente' };
+  }
+
+  /**
+   * POST /api/email/test-custom
+   * Prueba cualquier configuración SMTP externa (Gmail, Outlook, O365, etc.)
+   * sin modificar la configuración activa del servidor.
+   */
+  @Post('test-custom')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Prueba una configuración SMTP personalizada (sólo admin)' })
+  async testCustomSmtp(@Body() dto: TestCustomSmtpDto) {
+    const transport = nodemailer.createTransport({
+      host: dto.host,
+      port: dto.port,
+      secure: dto.secure ?? false,
+      auth: dto.user ? { user: dto.user, pass: dto.pass ?? '' } : undefined,
+      tls: { rejectUnauthorized: false },
+      connectionTimeout: 12_000,
+      socketTimeout: 12_000,
+    });
+    try {
+      await transport.verify();
+      const info = await transport.sendMail({
+        from: dto.from ?? dto.user ?? 'manobi-sentinel@test',
+        to: dto.destinatario,
+        subject: '[Manobi Sentinel] Prueba de integración SMTP',
+        html: `<div style="font-family:Arial,sans-serif;padding:24px;background:#0a0e1a;color:#e2e8f0;border-radius:8px;max-width:520px">
+          <h2 style="color:#00ff88;margin:0 0 12px">✓ Integración verificada</h2>
+          <p>La conexión SMTP con <strong>${dto.host}:${dto.port}</strong> funciona correctamente.</p>
+          <p style="color:#94a3b8;font-size:13px">Enviado desde Manobi Sentinel — Parques Nacionales Naturales de Colombia</p>
+        </div>`,
+      });
+      return { ok: true, messageId: info.messageId, host: dto.host, port: dto.port };
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    } finally {
+      transport.close();
+    }
   }
 
   /**

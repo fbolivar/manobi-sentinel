@@ -5,6 +5,8 @@ import { api } from '../lib/api';
 import { TopBar } from '../components/layout/TopBar';
 import { useAuthStore } from '../stores/auth.store';
 
+const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
+
 interface BackupItem {
   id: string;
   filename: string;
@@ -73,19 +75,15 @@ export function BackupsPage() {
       setMsg({ tipo: 'err', texto: e.response?.data?.message ?? e.message ?? 'fallo generando backup' }),
   });
 
-  const eliminar = useMutation({
-    mutationFn: async (id: string) => (await api.delete(`/backups/${encodeURIComponent(id)}`)).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['backups'] }),
-  });
-
-  async function descargar(b: BackupItem) {
-    const resp = await api.get(`/backups/${encodeURIComponent(b.id)}/download`, { responseType: 'blob' });
-    const blob = new Blob([resp.data], { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
+  function descargar(b: BackupItem) {
+    const token = useAuthStore.getState().accessToken;
+    const url = `${BASE_URL}/backups/${encodeURIComponent(b.id)}/download?access_token=${encodeURIComponent(token ?? '')}`;
     const a = document.createElement('a');
-    a.href = url; a.download = b.filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    a.href = url;
+    a.download = b.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 
   return (
@@ -168,7 +166,8 @@ export function BackupsPage() {
                     </div>
                   </div>
                   <div className="flex gap-1 flex-wrap">
-                    <button onClick={() => descargar(b)}
+                    <button type="button"
+                      onClick={() => descargar(b)}
                       className="text-[11px] px-2 py-1 border border-pnn-blue text-pnn-blue rounded hover:bg-pnn-blue/10">
                       ↓ Descargar
                     </button>
@@ -184,7 +183,7 @@ export function BackupsPage() {
                       className="text-[11px] px-2 py-1 border border-accent-red/60 text-accent-red rounded hover:bg-accent-red/10">
                       Restaurar PROD
                     </button>
-                    <button onClick={() => { if (confirm(`Eliminar "${b.filename}"?`)) eliminar.mutate(b.id); }}
+                    <button onClick={() => { setSelected(b); setModalMode('delete'); }}
                       className="text-[11px] px-2 py-1 border border-accent-red/40 text-accent-red rounded hover:bg-accent-red/10">
                       Eliminar
                     </button>
@@ -237,12 +236,15 @@ function BackupActionModal({
     verify: 'Valida la integridad del archivo y descifra el manifest. No modifica nada.',
     test: 'Crea una base de datos temporal, restaura el dump ahí y cuenta las filas principales. No toca producción.',
     prod: 'Esta acción SOBRESCRIBE la base de datos de producción con los datos del respaldo. Los usuarios conectados verán errores durante ~30–60 segundos. No es reversible.',
-    delete: '',
+    delete: `¿Eliminar el archivo "${backup.filename}" del almacenamiento? Esta acción no se puede deshacer.`,
   };
 
   const run = useMutation({
     mutationFn: async () => {
       setError(null);
+      if (mode === 'delete') {
+        return (await api.delete(`/backups/${encodeURIComponent(backup.id)}`)).data;
+      }
       if (mode === 'verify') {
         return (await api.post(`/backups/${encodeURIComponent(backup.id)}/verify`,
           { password: backup.encrypted ? password : undefined })).data;
@@ -259,6 +261,7 @@ function BackupActionModal({
       }
     },
     onSuccess: (d) => {
+      if (mode === 'delete') { qc.invalidateQueries({ queryKey: ['backups'] }); onClose(); return; }
       setResult(d);
       if (mode === 'prod') qc.invalidateQueries();
     },

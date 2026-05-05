@@ -18,11 +18,13 @@ export class EventosController {
     @Query('hours') hours?: string,
     @Query('tipo') tipo?: string,
     @Query('limit') limit?: string,
+    @Query('fuente') fuente?: string,
   ) {
     return this.svc.findRecent(
       hours ? Number(hours) : 24,
       tipo,
       limit ? Number(limit) : 500,
+      fuente,
     );
   }
 

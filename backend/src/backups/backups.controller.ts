@@ -54,10 +54,7 @@ export class BackupsController {
 
   @Get(':id/download')
   async descargar(@Param('id') id: string, @Res() res: Response) {
-    const buf = await this.svc.descargarBuffer(id);
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition', `attachment; filename="${id}"`);
-    res.send(buf);
+    await this.svc.descargarStream(id, res);
   }
 
   @Delete(':id')

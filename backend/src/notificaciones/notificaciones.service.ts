@@ -1,6 +1,17 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import * as nodemailer from 'nodemailer';
+
+export interface SmtpConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+  from: string;
+}
 
 interface AlertaPayload {
   id: string;
@@ -15,15 +26,69 @@ interface AlertaPayload {
 export class NotificacionesService implements OnModuleInit {
   private readonly log = new Logger('Notificaciones');
   private transporter!: nodemailer.Transporter;
+  private activeConfig!: SmtpConfig;
 
-  constructor(private readonly cfg: ConfigService) {}
+  constructor(
+    private readonly cfg: ConfigService,
+    @InjectDataSource() private readonly ds: DataSource,
+  ) {}
 
-  onModuleInit() {
+  async onModuleInit() {
+    const fromDb = await this.loadConfigFromDb();
+    this.activeConfig = fromDb ?? this.defaultConfig();
+    this.buildTransporter(this.activeConfig);
+  }
+
+  private defaultConfig(): SmtpConfig {
+    return {
+      host: this.cfg.get<string>('smtp.host') ?? 'postfix',
+      port: this.cfg.get<number>('smtp.port') ?? 25,
+      secure: false,
+      user: '',
+      pass: '',
+      from: this.cfg.get<string>('smtp.from') ?? 'no-reply@manobi.local',
+    };
+  }
+
+  private buildTransporter(c: SmtpConfig) {
     this.transporter = nodemailer.createTransport({
-      host: this.cfg.get<string>('smtp.host'),
-      port: this.cfg.get<number>('smtp.port'),
-      secure: false, ignoreTLS: true,
+      host: c.host,
+      port: c.port,
+      secure: c.secure,
+      auth: c.user ? { user: c.user, pass: c.pass } : undefined,
+      ignoreTLS: !c.user,
+      tls: { rejectUnauthorized: false },
     });
+  }
+
+  private async loadConfigFromDb(): Promise<SmtpConfig | null> {
+    try {
+      const rows = await this.ds.query<{ valor: SmtpConfig }[]>(
+        `SELECT valor FROM configuracion WHERE clave = 'smtp' LIMIT 1`,
+      );
+      return rows[0]?.valor ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async getConfig(): Promise<SmtpConfig & { source: 'db' | 'env' }> {
+    const fromDb = await this.loadConfigFromDb();
+    if (fromDb) return { ...fromDb, pass: fromDb.pass ? '••••••••' : '', source: 'db' };
+    const def = this.defaultConfig();
+    return { ...def, pass: '', source: 'env' };
+  }
+
+  async saveConfig(cfg: SmtpConfig): Promise<void> {
+    await this.ds.query(
+      `INSERT INTO configuracion (clave, valor, updated_at)
+       VALUES ('smtp', $1::jsonb, NOW())
+       ON CONFLICT (clave) DO UPDATE SET valor = $1::jsonb, updated_at = NOW()`,
+      [JSON.stringify(cfg)],
+    );
+    this.activeConfig = cfg;
+    this.buildTransporter(cfg);
+    this.log.log(`Configuración SMTP actualizada vía GUI: ${cfg.host}:${cfg.port} user=${cfg.user}`);
   }
 
   async enviarEmail(to: string | string[], subject: string, html: string, attachments?: Array<{ filename: string; content: Buffer; contentType?: string }>) {

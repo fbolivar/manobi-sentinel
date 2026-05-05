@@ -26,13 +26,14 @@ export class AlertasService {
     return qb.getMany();
   }
 
-  findHistorico(opts: { limit?: number; parqueId?: string; nivel?: string; desde?: string; hasta?: string }) {
+  findHistorico(opts: { limit?: number; parqueId?: string; nivel?: string; estado?: string; desde?: string; hasta?: string }) {
     const qb = this.repo.createQueryBuilder('a')
       .leftJoinAndSelect('a.parque', 'p')
       .orderBy('a.fecha_inicio', 'DESC')
       .take(Math.min(opts.limit ?? 200, 500));
     if (opts.parqueId) qb.andWhere('a.parque_id = :pid', { pid: opts.parqueId });
     if (opts.nivel) qb.andWhere('a.nivel = :nivel', { nivel: opts.nivel });
+    if (opts.estado) qb.andWhere('a.estado = :estado', { estado: opts.estado });
     if (opts.desde) qb.andWhere('a.fecha_inicio >= :desde', { desde: new Date(opts.desde) });
     if (opts.hasta) qb.andWhere('a.fecha_inicio <= :hasta', { hasta: new Date(opts.hasta) });
     return qb.getMany();

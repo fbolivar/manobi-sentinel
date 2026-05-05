@@ -153,7 +153,7 @@ export function EventosPage() {
         <section className="panel overflow-hidden flex flex-col max-h-[55vh]">
           <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
             <h2 className="text-sm font-bold tracking-wider">
-              EVENTOS ({eventos.data?.length ?? 0})
+              EVENTOS ({eventos.data?.length === 1000 ? '1000+' : (eventos.data?.length ?? 0)})
             </h2>
             {eventos.isFetching && !eventos.isLoading && (
               <span className="text-[10px] font-mono text-txt-muted animate-pulse">actualizando…</span>

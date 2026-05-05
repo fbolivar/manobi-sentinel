@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { TopBar } from '../components/layout/TopBar';
 import type { Alerta, Parque } from '../types';
@@ -11,27 +11,42 @@ const NIVEL_COLOR: Record<string, string> = {
   rojo: 'bg-red-500', amarillo: 'bg-amber-500', verde: 'bg-green-500',
 };
 
+const ORIGEN_ICON: Record<string, string> = {
+  motor_reglas: '⚙',
+  ia: '🤖',
+  manual: '👤',
+};
+
+function defaultDesde() {
+  const d = new Date();
+  d.setDate(d.getDate() - 30);
+  return d.toISOString().split('T')[0];
+}
+
 function toCsv(rows: Alerta[]): string {
-  const h = 'tipo,nivel,parque,estado,fecha_inicio,fecha_fin\n';
+  const h = 'tipo,nivel,parque,estado,origen,fecha_inicio,fecha_fin\n';
   return h + rows.map((a) =>
-    `"${a.tipo}","${a.nivel}","${a.parque?.nombre ?? ''}","${a.estado}","${a.fecha_inicio}","${a.fecha_fin ?? ''}"`
+    `"${a.tipo}","${a.nivel}","${a.parque?.nombre ?? ''}","${a.estado}","${a.generada_por ?? ''}","${a.fecha_inicio}","${a.fecha_fin ?? ''}"`
   ).join('\n');
 }
 
 export function HistoricoPage() {
-  const [parqueId, setParqueId] = useState('');
+  const [searchParams] = useSearchParams();
+  const [parqueId, setParqueId] = useState(() => searchParams.get('parque_id') ?? '');
   const [nivel, setNivel] = useState('');
-  const [desde, setDesde] = useState('');
+  const [estado, setEstado] = useState('');
+  const [desde, setDesde] = useState(defaultDesde);
   const [hasta, setHasta] = useState('');
 
   const params = useMemo(() => {
     const p: Record<string, string> = {};
     if (parqueId) p.parque_id = parqueId;
     if (nivel) p.nivel = nivel;
+    if (estado) p.estado = estado;
     if (desde) p.desde = new Date(desde).toISOString();
     if (hasta) p.hasta = new Date(hasta).toISOString();
     return p;
-  }, [parqueId, nivel, desde, hasta]);
+  }, [parqueId, nivel, estado, desde, hasta]);
 
   const parques = useQuery<Parque[]>({
     queryKey: ['parques-list'],
@@ -42,6 +57,7 @@ export function HistoricoPage() {
   const alertas = useQuery<Alerta[]>({
     queryKey: ['historico', params],
     queryFn: async () => (await api.get('/alertas/historico', { params: { ...params, limit: 500 } })).data,
+    refetchInterval: 60_000,
   });
 
   const stats = useQuery<StatRow[]>({
@@ -80,12 +96,14 @@ export function HistoricoPage() {
     <div className="h-screen flex flex-col">
       <TopBar />
       <main className="flex-1 overflow-auto p-3 md:p-4 space-y-3 md:space-y-4 pb-20 md:pb-4">
+
+        {/* Filtros */}
         <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-3 items-end">
           <label className="block">
             <span className="text-xs font-mono text-txt-muted">PARQUE</span>
             <select value={parqueId} onChange={(e) => setParqueId(e.target.value)}
               title="Parque" aria-label="Parque"
-              className="mt-1 block input-field !py-1.5 !text-xs w-full md:w-56">
+              className="mt-1 block input-field !py-1.5 !text-xs w-full md:w-52">
               <option value="">— Todos —</option>
               {parques.data?.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
             </select>
@@ -94,11 +112,22 @@ export function HistoricoPage() {
             <span className="text-xs font-mono text-txt-muted">NIVEL</span>
             <select value={nivel} onChange={(e) => setNivel(e.target.value)}
               title="Nivel" aria-label="Nivel"
-              className="mt-1 block input-field !py-1.5 !text-xs w-full md:w-32">
+              className="mt-1 block input-field !py-1.5 !text-xs w-full md:w-28">
               <option value="">Todos</option>
               <option value="rojo">Rojo</option>
               <option value="amarillo">Amarillo</option>
               <option value="verde">Verde</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-xs font-mono text-txt-muted">ESTADO</span>
+            <select value={estado} onChange={(e) => setEstado(e.target.value)}
+              title="Estado" aria-label="Estado"
+              className="mt-1 block input-field !py-1.5 !text-xs w-full md:w-28">
+              <option value="">Todos</option>
+              <option value="activa">Activa</option>
+              <option value="cerrada">Cerrada</option>
+              <option value="falsa">Falsa</option>
             </select>
           </label>
           <label className="block">
@@ -111,24 +140,27 @@ export function HistoricoPage() {
             <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)}
               className="mt-1 block input-field !py-1.5 !text-xs" />
           </label>
-          <button onClick={download} disabled={!alertas.data?.length}
+          <button type="button" onClick={download} disabled={!alertas.data?.length}
             className="px-4 py-1.5 border border-pnn-blue text-pnn-blue rounded hover:bg-pnn-blue/10 text-xs font-mono disabled:opacity-30">
             CSV
           </button>
-          <Link to="/dashboard" className="text-xs text-txt-muted hover:text-pnn-blue ml-auto">← Dashboard</Link>
+          <Link to="/dashboard" className="text-xs text-txt-muted hover:text-pnn-blue ml-auto self-end">← Dashboard</Link>
         </div>
 
+        {/* Gráfico por día */}
         <section className="panel p-4">
           <h2 className="text-sm font-bold tracking-wider mb-3">ALERTAS POR DÍA</h2>
           {stats.isLoading && <div className="text-xs text-txt-light">Cargando estadísticas…</div>}
-          {!stats.isLoading && days.length === 0 && <div className="text-xs text-txt-light">Sin datos para el rango seleccionado.</div>}
+          {!stats.isLoading && days.length === 0 && (
+            <div className="text-xs text-txt-light">Sin datos para el rango seleccionado.</div>
+          )}
           <div className="flex items-end gap-1 h-40 overflow-x-auto">
             {days.map(([day, levels]) => {
               const total = Object.values(levels).reduce((s, n) => s + n, 0);
               return (
-                <div key={day} className="flex flex-col items-center min-w-[28px]" title={`${day}: ${total}`}>
+                <div key={day} className="flex flex-col items-center min-w-[28px]" title={`${day}: ${total} alertas`}>
                   <div className="flex flex-col-reverse w-5" style={{ height: `${(total / maxDay) * 100}%`, minHeight: 4 }}>
-                    {['rojo', 'amarillo', 'verde'].map((n) => levels[n] ? (
+                    {(['rojo', 'amarillo', 'verde'] as const).map((n) => levels[n] ? (
                       <div key={n} className={`${NIVEL_COLOR[n]} w-full`}
                         style={{ height: `${(levels[n] / total) * 100}%`, minHeight: 2 }} />
                     ) : null)}
@@ -140,37 +172,83 @@ export function HistoricoPage() {
               );
             })}
           </div>
+          <div className="flex items-center gap-4 mt-3 pt-2 border-t border-border-subtle">
+            {(['rojo', 'amarillo', 'verde'] as const).map((n) => (
+              <div key={n} className="flex items-center gap-1.5">
+                <span className={`h-2.5 w-2.5 rounded-sm ${NIVEL_COLOR[n]}`} />
+                <span className="text-[10px] text-txt-muted capitalize">{n}</span>
+              </div>
+            ))}
+          </div>
         </section>
 
+        {/* Tabla */}
         <section className="panel overflow-hidden flex flex-col max-h-[60vh] md:max-h-[50vh]">
           <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
-            <h2 className="text-sm font-bold tracking-wider">HISTORIAL ({alertas.data?.length ?? 0})</h2>
+            <h2 className="text-sm font-bold tracking-wider">
+              HISTORIAL ({alertas.data?.length === 500 ? '500+' : (alertas.data?.length ?? 0)})
+            </h2>
+            {alertas.isFetching && !alertas.isLoading && (
+              <span className="text-[10px] font-mono text-txt-muted animate-pulse">actualizando…</span>
+            )}
           </div>
           <div className="overflow-y-auto flex-1">
             <table className="w-full text-xs">
               <thead className="bg-bg-surface/50 sticky top-0">
                 <tr>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted w-5"><span className="sr-only">Origen</span></th>
                   <th className="px-3 py-2 text-left font-mono text-txt-muted">TIPO</th>
                   <th className="px-3 py-2 text-left font-mono text-txt-muted">NIVEL</th>
                   <th className="px-3 py-2 text-left font-mono text-txt-muted">PARQUE</th>
                   <th className="px-3 py-2 text-left font-mono text-txt-muted">ESTADO</th>
-                  <th className="px-3 py-2 text-left font-mono text-txt-muted">FECHA</th>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted hidden md:table-cell">INICIO</th>
+                  <th className="px-3 py-2 text-left font-mono text-txt-muted hidden md:table-cell">FIN</th>
                 </tr>
               </thead>
               <tbody>
-                {alertas.isLoading && <tr><td colSpan={5} className="text-center py-6 text-txt-light">Cargando…</td></tr>}
+                {alertas.isLoading && (
+                  <tr><td colSpan={7} className="text-center py-6 text-txt-light">Cargando…</td></tr>
+                )}
+                {!alertas.isLoading && alertas.data?.length === 0 && (
+                  <tr><td colSpan={7} className="text-center py-6 text-txt-light">Sin alertas para los filtros seleccionados.</td></tr>
+                )}
                 {alertas.data?.map((a) => (
                   <tr key={a.id} className="border-b border-border-subtle/50 hover:bg-bg-surface2/50">
-                    <td className="px-3 py-2">{a.tipo}</td>
+                    <td className="px-3 py-2 text-center" title={a.generada_por ?? '—'}>
+                      <span className="text-sm">{ORIGEN_ICON[a.generada_por ?? ''] ?? '—'}</span>
+                    </td>
+                    <td className="px-3 py-2 max-w-[160px]">
+                      <div className="font-medium text-txt truncate">{a.tipo}</div>
+                      {a.descripcion && (
+                        <div className="text-[10px] text-txt-muted truncate mt-0.5" title={a.descripcion}>
+                          {a.descripcion}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-3 py-2">
                       <span className={`chip chip-${a.nivel === 'rojo' ? 'rojo' : a.nivel === 'amarillo' ? 'amarillo' : 'verde'}`}>
                         {a.nivel.toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-3 py-2 truncate max-w-xs">{a.parque?.nombre ?? '—'}</td>
-                    <td className="px-3 py-2 font-mono text-txt-muted">{a.estado}</td>
-                    <td className="px-3 py-2 font-mono text-txt-muted">
-                      {new Date(a.fecha_inicio).toLocaleString('es-CO', { timeZone: 'America/Bogota' })}
+                    <td className="px-3 py-2 truncate max-w-[140px] text-txt-muted">{a.parque?.nombre ?? '—'}</td>
+                    <td className="px-3 py-2">
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                        a.estado === 'activa'
+                          ? 'border-pnn-green/40 text-pnn-green-dark bg-pnn-green/10'
+                          : a.estado === 'falsa'
+                          ? 'border-border-subtle text-txt-muted'
+                          : 'border-border-subtle text-txt-muted'
+                      }`}>
+                        {a.estado}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 font-mono text-txt-muted hidden md:table-cell whitespace-nowrap">
+                      {new Date(a.fecha_inicio).toLocaleString('es-CO', { timeZone: 'America/Bogota', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-3 py-2 font-mono text-txt-muted hidden md:table-cell whitespace-nowrap">
+                      {a.fecha_fin
+                        ? new Date(a.fecha_fin).toLocaleString('es-CO', { timeZone: 'America/Bogota', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                        : <span className="text-pnn-green-dark text-[10px]">activa</span>}
                     </td>
                   </tr>
                 ))}

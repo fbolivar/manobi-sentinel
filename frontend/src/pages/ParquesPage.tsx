@@ -14,7 +14,7 @@ const RIESGO_CHIP: Record<NivelRiesgo, string> = {
   alto: 'chip-rojo',
 };
 
-const EMPTY_FORM = { nombre: '', region: '', nivel_riesgo: '' as NivelRiesgo | '', area_ha: '', descripcion: '' };
+const EMPTY_FORM = { nombre: '', region: '', nivel_riesgo: '' as NivelRiesgo | '', descripcion: '' };
 
 export function ParquesPage() {
   const qc = useQueryClient();
@@ -26,6 +26,7 @@ export function ParquesPage() {
   const [editing, setEditing] = useState<Parque | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const list = useQuery<Parque[]>({
     queryKey: ['parques'],
@@ -40,7 +41,6 @@ export function ParquesPage() {
       nombre: form.nombre,
       ...(form.region && { region: form.region }),
       ...(form.nivel_riesgo && { nivel_riesgo: form.nivel_riesgo }),
-      ...(form.area_ha && { area_ha: Number(form.area_ha) }),
       ...(form.descripcion && { descripcion: form.descripcion }),
     })).data,
     onSuccess: () => {
@@ -62,7 +62,6 @@ export function ParquesPage() {
         nombre: form.nombre,
         ...(form.region !== '' ? { region: form.region } : {}),
         ...(form.nivel_riesgo ? { nivel_riesgo: form.nivel_riesgo } : {}),
-        ...(form.area_ha !== '' ? { area_ha: Number(form.area_ha) } : {}),
         ...(form.descripcion !== '' ? { descripcion: form.descripcion } : {}),
       })).data;
     },
@@ -93,7 +92,6 @@ export function ParquesPage() {
       nombre: p.nombre,
       region: p.region ?? '',
       nivel_riesgo: (p.nivel_riesgo as NivelRiesgo | null) ?? '',
-      area_ha: p.area_ha != null ? String(p.area_ha) : '',
       descripcion: p.descripcion ?? '',
     });
     setMsg(null);
@@ -139,12 +137,6 @@ export function ParquesPage() {
           <option value="medio">Medio</option>
           <option value="alto">Alto</option>
         </select>
-      </label>
-      <label className="block">
-        <span className="text-xs font-mono text-txt-muted">ÁREA (ha)</span>
-        <input type="number" min="0" value={form.area_ha}
-          onChange={(e) => setForm({ ...form, area_ha: e.target.value })}
-          className="mt-1 w-full bg-bg-surface2 border border-border-subtle rounded px-3 py-2 font-mono text-sm" />
       </label>
       <label className="block">
         <span className="text-xs font-mono text-txt-muted">DESCRIPCIÓN</span>
@@ -195,14 +187,13 @@ export function ParquesPage() {
                   <th className="px-3 py-2 text-left font-mono text-txt-muted">NOMBRE</th>
                   <th className="px-3 py-2 text-left font-mono text-txt-muted">REGIÓN</th>
                   <th className="px-3 py-2 text-left font-mono text-txt-muted">RIESGO</th>
-                  <th className="px-3 py-2 text-left font-mono text-txt-muted">ÁREA (ha)</th>
                   <th className="px-3 py-2 text-left font-mono text-txt-muted">CREADO</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
               <tbody>
                 {list.isLoading && (
-                  <tr><td colSpan={6} className="text-center py-6 text-txt-light">Cargando…</td></tr>
+                  <tr><td colSpan={5} className="text-center py-6 text-txt-light">Cargando…</td></tr>
                 )}
                 {filtered.map((p) => (
                   <tr key={p.id} className="border-b border-border-subtle/50 hover:bg-bg-surface2/50">
@@ -212,9 +203,6 @@ export function ParquesPage() {
                       {p.nivel_riesgo
                         ? <span className={`chip ${RIESGO_CHIP[p.nivel_riesgo]}`}>{p.nivel_riesgo}</span>
                         : <span className="text-txt-light">—</span>}
-                    </td>
-                    <td className="px-3 py-2 font-mono">
-                      {p.area_ha != null ? p.area_ha.toLocaleString('es-CO') : '—'}
                     </td>
                     <td className="px-3 py-2 font-mono text-txt-muted">
                       {new Date(p.creado_en).toLocaleDateString('es-CO')}
@@ -228,11 +216,19 @@ export function ParquesPage() {
                           </button>
                         )}
                         {canDelete && (
-                          <button type="button"
-                            onClick={() => confirm(`¿Eliminar "${p.nombre}"?`) && remove.mutate(p.id)}
-                            className="text-xs px-3 py-1.5 border border-accent-red/50 text-accent-red rounded hover:bg-accent-red/10">
-                            Eliminar
-                          </button>
+                          confirmDelete === p.id ? (
+                            <div className="flex gap-1">
+                              <button type="button" onClick={() => { remove.mutate(p.id); setConfirmDelete(null); }}
+                                className="text-xs px-2 py-1.5 bg-accent-red text-white rounded hover:brightness-110">Confirmar</button>
+                              <button type="button" onClick={() => setConfirmDelete(null)}
+                                className="text-xs px-2 py-1.5 border border-border-subtle rounded hover:bg-bg-surface2">✕</button>
+                            </div>
+                          ) : (
+                            <button type="button" onClick={() => setConfirmDelete(p.id)}
+                              className="text-xs px-3 py-1.5 border border-accent-red/50 text-accent-red rounded hover:bg-accent-red/10">
+                              Eliminar
+                            </button>
+                          )
                         )}
                       </div>
                     </td>
@@ -253,7 +249,7 @@ export function ParquesPage() {
                     )}
                   </div>
                   <div className="text-[11px] text-txt-muted font-mono">
-                    {p.region ?? 'Sin región'}{p.area_ha != null ? ` · ${p.area_ha.toLocaleString('es-CO')} ha` : ''}
+                    {p.region ?? 'Sin región'}
                   </div>
                   {(canEdit || canDelete) && (
                     <div className="flex gap-2 pt-1">
@@ -264,11 +260,19 @@ export function ParquesPage() {
                         </button>
                       )}
                       {canDelete && (
-                        <button type="button"
-                          onClick={() => confirm(`¿Eliminar "${p.nombre}"?`) && remove.mutate(p.id)}
-                          className="text-xs py-2 px-4 border border-accent-red/50 text-accent-red rounded hover:bg-accent-red/10">
-                          Eliminar
-                        </button>
+                        confirmDelete === p.id ? (
+                          <div className="flex gap-1 flex-1">
+                            <button type="button" onClick={() => { remove.mutate(p.id); setConfirmDelete(null); }}
+                              className="flex-1 text-xs py-2 bg-accent-red text-white rounded hover:brightness-110">Confirmar</button>
+                            <button type="button" onClick={() => setConfirmDelete(null)}
+                              className="text-xs py-2 px-3 border border-border-subtle rounded hover:bg-bg-surface2">✕</button>
+                          </div>
+                        ) : (
+                          <button type="button" onClick={() => setConfirmDelete(p.id)}
+                            className="text-xs py-2 px-4 border border-accent-red/50 text-accent-red rounded hover:bg-accent-red/10">
+                            Eliminar
+                          </button>
+                        )
                       )}
                     </div>
                   )}
