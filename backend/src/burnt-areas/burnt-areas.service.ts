@@ -5,30 +5,52 @@ import { DataSource } from 'typeorm';
 import { firstValueFrom } from 'rxjs';
 
 export interface BurntAreaFeature {
-  id: string | number;
+  id: number;
   area_ha: number;
-  start_time: string;
-  end_time: string | null;
-  satellite: string;
-  confidence: number | null;
+  pre_time: string;
+  post_time: string;
+  severity: string;
+  confidence: number; // 0-100
+  product_type: string;
+  mean_dnbr: number;
   parque_id: string | null;
   parque_nombre: string | null;
-  geometry: unknown;
+}
+
+interface OroraBurntProps {
+  id: number;
+  area: number;              // in ha cuando unit_area=ha
+  pre_time: string;
+  post_time: string;
+  severity: string;
+  confidence: number;        // 0-1
+  product_type: string;
+  mean_dnbr: number;
+  mean_dndvi: number;
+  detection_processing_step_id: number;
 }
 
 interface OroraBurntFeature {
   type: string;
-  geometry: { type: string; coordinates: unknown };
-  properties: Record<string, unknown>;
+  geometry: { type: string; coordinates: unknown } | null;
+  properties: OroraBurntProps;
 }
-interface OroraBurntGeoJSON {
-  type: string;
-  features: OroraBurntFeature[];
+interface OroraBurntGeoJSON { type: string; features: OroraBurntFeature[] }
+
+// Formato date para OroraTech: 'YYYY-MM-DD-hhmm'
+function toOroraDate(iso: string): string {
+  const d = new Date(iso);
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const hh = String(d.getUTCHours()).padStart(2, '0');
+  const min = String(d.getUTCMinutes()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}-${hh}${min}`;
 }
 
-// In-memory cache: key → { data, expires }
 const cache = new Map<string, { data: BurntAreaFeature[]; expires: number }>();
-const TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
+const TTL_MS = 6 * 60 * 60 * 1000;
+const MAX_MINUTES = 180 * 24 * 60; // 180 días máximo por petición
 
 @Injectable()
 export class BurntAreasService {
@@ -57,19 +79,29 @@ export class BurntAreasService {
   private async fetchFromOrora(desde: string, hasta: string): Promise<BurntAreaFeature[]> {
     if (!this.apiKey) { this.log.warn('ORORATECH_API_KEY no configurado'); return []; }
 
+    const desdeMs = new Date(desde).getTime();
+    const hastaMs = new Date(hasta).getTime();
+    const minutes = Math.min(Math.ceil((hastaMs - desdeMs) / 60_000), MAX_MINUTES);
+    const date = toOroraDate(hasta);
+
     try {
       const { data } = await firstValueFrom(this.http.get<OroraBurntGeoJSON>(
         `${this.baseUrl}/burnt_areas/`,
         {
-          timeout: 30_000,
-          params: { xmin: -79, ymin: -4, xmax: -67, ymax: 13, start_time: desde, end_time: hasta },
+          timeout: 60_000,
+          params: {
+            xmin: -79, ymin: -4, xmax: -67, ymax: 13,
+            minutes,
+            date,
+            unit_area: 'ha',
+            select: 'shape',
+          },
           headers: { apikey: this.apiKey },
         },
       ));
 
       const raw = data?.features ?? [];
-      this.log.log(`OroraTech burnt_areas: ${raw.length} polígonos [${desde} → ${hasta}]`);
-
+      this.log.log(`OroraTech burnt_areas: ${raw.length} polígonos [${date} - ${minutes}min]`);
       if (raw.length === 0) return [];
 
       return await this.enrichWithParques(raw);
@@ -82,36 +114,42 @@ export class BurntAreasService {
   private async enrichWithParques(raw: OroraBurntFeature[]): Promise<BurntAreaFeature[]> {
     const result: BurntAreaFeature[] = [];
 
-    for (const f of raw) {
-      const p = f.properties;
-      const areaHa = Number(p.area_ha ?? p.area ?? 0);
-      const startTime = String(p.start_time ?? p.detection_time ?? p.acquisition_time ?? '');
-      const endTime = p.end_time ? String(p.end_time) : null;
-      const satellite = String(p.satellite_name ?? p.satellite ?? 'OroraTech');
-      const confidence = p.confidence != null ? Number(p.confidence) : null;
-      const id = String(p.id ?? Math.random().toString(36).slice(2));
+    // Procesar en batches para no saturar PostgreSQL con 7k consultas
+    const BATCH = 50;
+    for (let i = 0; i < raw.length; i += BATCH) {
+      const batch = raw.slice(i, i + BATCH);
+      await Promise.all(batch.map(async (f) => {
+        const p = f.properties;
+        let parqueId: string | null = null;
+        let parqueNombre: string | null = null;
 
-      let parqueId: string | null = null;
-      let parqueNombre: string | null = null;
+        if (f.geometry?.type === 'Polygon' || f.geometry?.type === 'MultiPolygon') {
+          try {
+            const rows = await this.ds.query<{ id: string; nombre: string }[]>(
+              `SELECT p.id, p.nombre
+               FROM parques p
+               WHERE p.geometria IS NOT NULL
+                 AND ST_Intersects(p.geometria, ST_SetSRID(ST_GeomFromGeoJSON($1), 4326))
+               LIMIT 1`,
+              [JSON.stringify(f.geometry)],
+            );
+            if (rows.length > 0) { parqueId = rows[0].id; parqueNombre = rows[0].nombre; }
+          } catch { /* geometría inválida */ }
+        }
 
-      // Spatial join: buscar parque que intersecta con la geometría
-      if (f.geometry?.type === 'Polygon' || f.geometry?.type === 'MultiPolygon') {
-        try {
-          const rows = await this.ds.query<{ id: string; nombre: string }[]>(
-            `SELECT p.id, p.nombre
-             FROM parques p
-             WHERE ST_Intersects(p.geometria, ST_SetSRID(ST_GeomFromGeoJSON($1), 4326))
-             LIMIT 1`,
-            [JSON.stringify(f.geometry)],
-          );
-          if (rows.length > 0) {
-            parqueId = rows[0].id;
-            parqueNombre = rows[0].nombre;
-          }
-        } catch { /* geometría inválida, se deja null */ }
-      }
-
-      result.push({ id, area_ha: areaHa, start_time: startTime, end_time: endTime, satellite, confidence, parque_id: parqueId, parque_nombre: parqueNombre, geometry: f.geometry });
+        result.push({
+          id: p.id,
+          area_ha: Math.round(p.area * 100) / 100,
+          pre_time: p.pre_time,
+          post_time: p.post_time,
+          severity: p.severity ?? 'unknown',
+          confidence: Math.round(p.confidence * 100),
+          product_type: p.product_type ?? 'unknown',
+          mean_dnbr: Math.round(p.mean_dnbr * 10000) / 10000,
+          parque_id: parqueId,
+          parque_nombre: parqueNombre,
+        });
+      }));
     }
 
     return result;
@@ -120,6 +158,7 @@ export class BurntAreasService {
   summarize(features: BurntAreaFeature[]) {
     const totalHa = features.reduce((s, f) => s + f.area_ha, 0);
     const porParque = new Map<string, { nombre: string; ha: number; count: number }>();
+    const porSeveridad: Record<string, number> = {};
 
     features.forEach((f) => {
       const key = f.parque_id ?? '__fuera__';
@@ -128,18 +167,19 @@ export class BurntAreasService {
       cur.ha += f.area_ha;
       cur.count++;
       porParque.set(key, cur);
-    });
 
-    const topParques = [...porParque.entries()]
-      .map(([id, v]) => ({ id, ...v }))
-      .sort((a, b) => b.ha - a.ha)
-      .slice(0, 10);
+      porSeveridad[f.severity] = (porSeveridad[f.severity] ?? 0) + 1;
+    });
 
     return {
       total_ha: Math.round(totalHa * 100) / 100,
       count: features.length,
       parques_afectados: [...porParque.keys()].filter((k) => k !== '__fuera__').length,
-      top_parques: topParques,
+      por_severidad: porSeveridad,
+      top_parques: [...porParque.entries()]
+        .map(([id, v]) => ({ id, ...v, ha: Math.round(v.ha * 100) / 100 }))
+        .sort((a, b) => b.ha - a.ha)
+        .slice(0, 10),
       features,
     };
   }
