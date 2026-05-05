@@ -38,9 +38,9 @@ export function DashboardPage() {
       {/* Desktop: 3-column grid con timeline colapsable */}
       <main className="hidden md:grid flex-1 gap-2 p-2 overflow-hidden
                        grid-cols-[280px_1fr_300px] grid-rows-[1fr_auto]">
-        <div className="col-span-1 row-span-1 min-h-0"><AlertsPanel /></div>
-        <div className="col-span-1 row-span-1 min-h-0 relative"><MapView /></div>
-        <div className="col-span-1 row-span-1 min-h-0"><MetricsPanel /></div>
+        <div className="col-span-1 row-span-1 min-h-0 h-full"><AlertsPanel /></div>
+        <div className="col-span-1 row-span-1 min-h-0 relative h-full"><MapView /></div>
+        <div className="col-span-1 row-span-1 min-h-0 h-full"><MetricsPanel /></div>
         <div className="col-span-3"><BottomTimeline /></div>
       </main>
 

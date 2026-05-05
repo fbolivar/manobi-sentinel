@@ -80,11 +80,11 @@ export function MetricsPanel() {
   }
 
   return (
-    <aside className="panel flex flex-col overflow-hidden">
-      <div className="px-4 py-3 border-b border-border-subtle">
+    <aside className="panel flex flex-col overflow-hidden h-full">
+      <div className="px-4 py-3 border-b border-border-subtle shrink-0">
         <h2 className="text-sm font-semibold text-txt tracking-wide">Métricas en tiempo real</h2>
       </div>
-      <div className="p-4 pb-6 space-y-3 overflow-y-auto">
+      <div className="p-4 pb-4 space-y-3 overflow-y-auto flex-1 min-h-0">
         {/* Contadores por nivel */}
         <div className="grid grid-cols-3 gap-2">
           {(['rojo', 'amarillo', 'verde'] as const).map((n) => (
