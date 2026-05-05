@@ -8,7 +8,7 @@ function useClock() {
   return now;
 }
 
-const SISTEMA_ROUTES = ['/historico', '/eventos', '/alertas-hidro', '/suscripciones', '/reglas', '/usuarios', '/auditoria', '/backups', '/integraciones'];
+const SISTEMA_ROUTES = ['/historico', '/eventos', '/alertas-hidro', '/areas-quemadas', '/suscripciones', '/reglas', '/usuarios', '/auditoria', '/backups', '/integraciones'];
 
 function SistemaMenu({ user }: { user: { rol: string } | null }) {
   const [open, setOpen] = useState(false);
@@ -53,6 +53,7 @@ function SistemaMenu({ user }: { user: { rol: string } | null }) {
           <NavLink to="/historico" className={itemCls}>Histórico</NavLink>
           <NavLink to="/eventos" className={itemCls}>Eventos</NavLink>
           <NavLink to="/alertas-hidro" className={itemCls}>Alertas Hidrometeorológicas</NavLink>
+          <NavLink to="/areas-quemadas" className={itemCls}>Áreas Quemadas</NavLink>
           <NavLink to="/suscripciones" className={itemCls}>Suscripciones</NavLink>
           <NavLink to="/reglas" className={itemCls}>Reglas</NavLink>
           {(user?.rol === 'admin' || user?.rol === 'operador') && (

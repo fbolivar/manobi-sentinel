@@ -27,6 +27,7 @@ import { ReportesModule } from './reportes/reportes.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { HotspotsModule } from './hotspots/hotspots.module';
 import { BackupsModule } from './backups/backups.module';
+import { BurntAreasModule } from './burnt-areas/burnt-areas.module';
 import { Usuario } from './common/entities/usuario.entity';
 import { SeedAdminService } from './bootstrap/seed-admin';
 import { Public } from './common/decorators/public.decorator';
@@ -88,6 +89,7 @@ class HealthController {
     MetricsModule,
     HotspotsModule,
     BackupsModule,
+    BurntAreasModule,
   ],
   controllers: [HealthController],
   providers: [
