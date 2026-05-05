@@ -186,29 +186,33 @@ export function MetricsPanel() {
             )}
           </div>
           {showPredInfo && (
-            <div className="relative mt-2 mb-1 rounded-md border border-blue-300 bg-white p-3 text-[10px] text-gray-700 leading-snug shadow-md z-10">
-              <button
-                type="button"
-                onClick={() => setShowPredInfo(false)}
-                className="absolute top-1.5 right-2 text-gray-400 hover:text-gray-700 text-sm leading-none"
-                aria-label="Cerrar">
-                ×
-              </button>
-              <p className="font-semibold text-[11px] text-gray-900 mb-1">¿Qué mide esta predicción?</p>
-              <p className="mb-1.5">Estima la probabilidad de incendio forestal en cada área protegida para las próximas 24 horas.</p>
-              <p className="font-semibold text-gray-800 mb-0.5">Fuente de datos:</p>
-              <p className="mb-1.5">Satélites OroraTech (focos de calor, FRP, confianza) + condiciones hidrometeorológicas.</p>
-              <p className="font-semibold text-gray-800 mb-0.5">Metodología:</p>
-              <p className="mb-1.5">Modelo de IA (Anthropic Claude) que correlaciona detecciones satelitales activas, condiciones de temperatura, humedad, días sin lluvia y viento para calcular un índice de riesgo.</p>
-              <p className="font-semibold text-gray-800 mb-0.5">Escala:</p>
-              <p>
-                <span className="text-green-600">&lt;40% bajo</span>
-                {' · '}
-                <span className="text-amber-600">40–70% medio</span>
-                {' · '}
-                <span className="text-red-600">&gt;70% alto</span>
-                . Es un estimado probabilístico, no una certeza.
-              </p>
+            <div className="mt-2 mb-1 rounded-md border border-blue-300 bg-white text-[10px] text-gray-700 leading-snug shadow-md z-10 flex flex-col max-h-52">
+              <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5 border-b border-blue-100 shrink-0">
+                <p className="font-semibold text-[11px] text-gray-900">¿Qué mide esta predicción?</p>
+                <button
+                  type="button"
+                  onClick={() => setShowPredInfo(false)}
+                  className="ml-2 text-gray-400 hover:text-gray-700 text-sm leading-none shrink-0"
+                  aria-label="Cerrar">
+                  ×
+                </button>
+              </div>
+              <div className="overflow-y-auto px-3 py-2 space-y-1.5">
+                <p>Estima la probabilidad de incendio forestal en cada área protegida para las próximas 24 horas.</p>
+                <p className="font-semibold text-gray-800">Fuente de datos:</p>
+                <p>Satélites OroraTech (focos de calor, FRP, confianza) + condiciones hidrometeorológicas.</p>
+                <p className="font-semibold text-gray-800">Metodología:</p>
+                <p>Modelo de IA (Anthropic Claude) que correlaciona detecciones satelitales activas, condiciones de temperatura, humedad, días sin lluvia y viento para calcular un índice de riesgo.</p>
+                <p className="font-semibold text-gray-800">Escala:</p>
+                <p>
+                  <span className="text-green-600">&lt;40% bajo</span>
+                  {' · '}
+                  <span className="text-amber-600">40–70% medio</span>
+                  {' · '}
+                  <span className="text-red-600">&gt;70% alto</span>
+                  . Es un estimado probabilístico, no una certeza.
+                </p>
+              </div>
             </div>
           )}
           <div className="text-[10px] text-txt-muted mt-0.5 mb-3 leading-snug">
