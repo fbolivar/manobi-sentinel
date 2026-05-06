@@ -29,6 +29,7 @@ class SolicitarIncendioDto {
   @ValidateNested({ each: true }) @Type(() => EntradaCronologicaDto) monitoreo_satelital!: EntradaCronologicaDto[];
   @ValidateNested({ each: true }) @Type(() => EntradaCronologicaDto) intervenciones!: EntradaCronologicaDto[];
   @IsOptional() @IsString() fauna_afectada?: string;
+  @IsOptional() @IsUUID() parque_id?: string;
 }
 
 class SolicitarReporteDto {
