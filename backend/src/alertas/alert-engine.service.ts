@@ -26,12 +26,7 @@ export class AlertEngineService implements OnApplicationBootstrap {
   ) {}
 
   onApplicationBootstrap() {
-    // Pre-warm: primera evaluación a los 30s del boot, para que el dashboard
-    // tenga alertas frescas sin esperar el primer ciclo de 15 min.
-    setTimeout(() => {
-      this.log.log('Pre-warm: evaluación inicial tras boot');
-      this.run().catch((e) => this.log.error(`Pre-warm falló: ${(e as Error).message}`));
-    }, 30_000).unref?.();
+    this.log.log('AlertEngine listo — primer ciclo en el siguiente tick de cron (:00/:15/:30/:45)');
   }
 
   @Cron('0 */15 * * * *', { name: 'alert-engine', timeZone: 'America/Bogota' })
@@ -71,7 +66,13 @@ export class AlertEngineService implements OnApplicationBootstrap {
     let nuevas = 0;
     let dedup = 0;
     let cerradas = 0;
-    const base = await this.eventos.contextoPorParque(parque.id);
+    let base: Record<string, unknown>;
+    try {
+      base = await this.eventos.contextoPorParque(parque.id);
+    } catch (e) {
+      this.log.warn(`contextoPorParque parque ${parque.id} falló (${(e as Error).message}) — usando defaults`);
+      base = { lluvia_24h_mm: 0, lluvia_1h_mm: 0, viento_kmh: 0, temperatura_c: 25, humedad_relativa: 75, dias_sin_lluvia: 2, nivel_rio_mt: null };
+    }
 
     const [predIncendio, predInundacion] = await Promise.all([
       this.prediccionesAI.predictIncendio({

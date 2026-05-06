@@ -120,50 +120,49 @@ export class EventosService {
   }
 
   private async calcContexto(parqueId: string): Promise<Record<string, number | string | null>> {
-    const row = (await this.ds.query(
+    // Una sola pasada espacial cubre tanto la ventana de 24h (clima) como la de 30d (lluvia histórica).
+    // ST_Intersects usa el índice GiST idx_eventos_geom; el filtro e.fecha acota el scan de filas.
+    const [row] = (await this.ds.query(
       `WITH pq AS (SELECT geometria, nivel_riesgo FROM parques WHERE id = $1),
-       dentro AS (
-         SELECT e.*
+       eventos_30d AS (
+         SELECT e.tipo, e.intensidad, e.fecha, e.datos_raw
          FROM eventos_climaticos e, pq
-         WHERE ST_Intersects(pq.geometria, e.ubicacion)
-           AND e.fecha >= NOW() - INTERVAL '24 hours'
+         WHERE e.ubicacion IS NOT NULL
+           AND e.ubicacion && pq.geometria
+           AND ST_Intersects(pq.geometria, e.ubicacion)
+           AND e.fecha >= NOW() - INTERVAL '30 days'
        ),
+       dentro AS (SELECT * FROM eventos_30d WHERE fecha >= NOW() - INTERVAL '24 hours'),
        cercanos_tyh AS (
          SELECT e.tipo, e.intensidad
          FROM eventos_climaticos e, pq
          WHERE e.tipo IN ('temperatura','humedad')
+           AND e.ubicacion IS NOT NULL
            AND e.fecha >= NOW() - INTERVAL '24 hours'
            AND ST_DWithin(pq.geometria, e.ubicacion, 1.5)
-       )
+       ),
+       lluvia_30d AS (SELECT COUNT(*) AS n, MAX(fecha) AS ultima FROM eventos_30d WHERE tipo='lluvia')
        SELECT
-         COALESCE((SELECT SUM(intensidad) FROM dentro WHERE tipo='lluvia'), 0) AS lluvia_24h_mm,
+         COALESCE((SELECT SUM(intensidad) FROM dentro WHERE tipo='lluvia'), 0)                          AS lluvia_24h_mm,
          COALESCE((SELECT SUM(intensidad) FROM dentro WHERE tipo='lluvia' AND fecha >= NOW() - INTERVAL '1 hour'), 0) AS lluvia_1h_mm,
-         COALESCE((SELECT AVG(intensidad) FROM dentro WHERE tipo='viento'), 0) AS viento_kmh,
+         COALESCE((SELECT AVG(intensidad) FROM dentro WHERE tipo='viento'), 0)                          AS viento_kmh,
          COALESCE(
            (SELECT AVG(intensidad) FROM dentro WHERE tipo='temperatura'),
            (SELECT AVG(intensidad) FROM cercanos_tyh WHERE tipo='temperatura'),
            (SELECT MAX((datos_raw->>'temperatura_c')::numeric) FROM dentro)
-         ) AS temperatura_c,
+         )                                                                                               AS temperatura_c,
          COALESCE(
            (SELECT AVG(intensidad) FROM dentro WHERE tipo='humedad'),
            (SELECT AVG(intensidad) FROM cercanos_tyh WHERE tipo='humedad'),
            (SELECT MIN((datos_raw->>'humedad_relativa')::numeric) FROM dentro)
-         ) AS humedad_relativa,
-         (SELECT AVG(intensidad) FROM dentro WHERE tipo='nivel_rio') AS nivel_rio_mt,
-         (SELECT nivel_riesgo FROM pq) AS parque_nivel_riesgo`,
+         )                                                                                               AS humedad_relativa,
+         (SELECT AVG(intensidad) FROM dentro WHERE tipo='nivel_rio')                                    AS nivel_rio_mt,
+         (SELECT nivel_riesgo FROM pq)                                                                  AS parque_nivel_riesgo,
+         (SELECT n    FROM lluvia_30d)                                                                  AS lluvia_30d_n,
+         (SELECT EXTRACT(EPOCH FROM (NOW() - ultima))/86400 FROM lluvia_30d WHERE n > 0)               AS lluvia_30d_dias`,
       [parqueId],
-    ))[0] as Record<string, string>;
-    const dsl = (await this.ds.query(
-      `SELECT
-         COUNT(*) AS n,
-         EXTRACT(EPOCH FROM (NOW() - MAX(e.fecha)))/86400 AS dias
-       FROM eventos_climaticos e, parques p
-       WHERE p.id = $1
-         AND e.tipo = 'lluvia'
-         AND e.fecha >= NOW() - INTERVAL '30 days'
-         AND ST_Intersects(p.geometria, e.ubicacion)`,
-      [parqueId],
-    ))[0] as { n: string; dias: string | null };
+    )) as Record<string, string>[];
+    const dsl = { n: row?.lluvia_30d_n ?? '0', dias: row?.lluvia_30d_dias ?? null };
     const ctx = {
       lluvia_24h_mm: Number(row?.lluvia_24h_mm ?? 0),
       lluvia_1h_mm: Number(row?.lluvia_1h_mm ?? 0),
