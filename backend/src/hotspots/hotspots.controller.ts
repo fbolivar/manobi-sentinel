@@ -1,10 +1,18 @@
 import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { IsDateString, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { HotspotsService } from './hotspots.service';
 import { DataSource } from 'typeorm';
+
+class HotspotsQueryDto {
+  @IsOptional() @IsInt() @Min(1) @Max(168) @Type(() => Number) hours?: number;
+  @IsOptional() @IsDateString() desde?: string;
+  @IsOptional() @IsDateString() hasta?: string;
+}
 
 @ApiTags('hotspots')
 @ApiBearerAuth()
@@ -17,11 +25,8 @@ export class HotspotsController {
   ) {}
 
   @Get()
-  async recientes(
-    @Query('hours') hours?: string,
-    @Query('desde') desde?: string,
-    @Query('hasta') hasta?: string,
-  ) {
+  async recientes(@Query() q: HotspotsQueryDto) {
+    const { hours, desde, hasta } = q;
     let rows: Record<string, unknown>[];
 
     if (desde || hasta) {
@@ -41,7 +46,7 @@ export class HotspotsController {
         [d.toISOString(), h.toISOString()],
       );
     } else {
-      const h = Math.min(Number(hours) || 24, 168);
+      const h = hours ?? 24;
       rows = await this.ds.query(
         `SELECT e.id, e.intensidad AS frp, e.fecha, e.fuente,
                 ST_X(e.ubicacion) AS lon, ST_Y(e.ubicacion) AS lat,

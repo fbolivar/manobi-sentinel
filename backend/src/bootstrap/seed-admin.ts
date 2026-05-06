@@ -17,7 +17,16 @@ export class SeedAdminService implements OnApplicationBootstrap {
     const email = process.env.ADMIN_EMAIL ?? 'admin@manobi.local';
     const exists = await this.repo.findOne({ where: { email } });
     if (exists) return;
-    const password = process.env.ADMIN_PASSWORD ?? 'ChangeMe12345!';
+    let password = process.env.ADMIN_PASSWORD;
+    if (!password) {
+      const { randomBytes } = await import('crypto');
+      password = randomBytes(18).toString('base64url').slice(0, 20) + 'A1!';
+      this.log.warn('╔══════════════════════════════════════════════════════╗');
+      this.log.warn('║  ADMIN_PASSWORD no configurado — contraseña generada ║');
+      this.log.warn(`║  → ${password.padEnd(48)}║`);
+      this.log.warn('║  Cópiala ahora. No se mostrará de nuevo.             ║');
+      this.log.warn('╚══════════════════════════════════════════════════════╝');
+    }
     const rounds = this.cfg.get<number>('bcryptRounds') ?? 12;
     await this.repo.save({
       nombre: 'Administrador',

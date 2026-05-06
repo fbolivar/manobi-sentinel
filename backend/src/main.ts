@@ -31,8 +31,7 @@ async function bootstrap() {
 
   // Swagger solo en desarrollo o si se activa explicitamente en el .env.
   // En produccion un /api/docs publico es un vector de info-disclosure innecesario.
-  const enableSwagger =
-    process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true';
+  const enableSwagger = process.env.NODE_ENV !== 'production';
   if (enableSwagger) {
     const config = new DocumentBuilder()
       .setTitle('Manobi Sentinel API')

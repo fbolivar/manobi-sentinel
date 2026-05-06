@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Alerta } from '../common/entities/alerta.entity';
 import { ReglaAlerta } from '../common/entities/regla-alerta.entity';
@@ -17,6 +19,10 @@ import { ReglasService } from './reglas.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Alerta, ReglaAlerta, Parque, Prediccion]),
+    JwtModule.registerAsync({
+      useFactory: (cfg: ConfigService) => ({ secret: cfg.get<string>('jwt.accessSecret') }),
+      inject: [ConfigService],
+    }),
     RedisModule, EventosModule, PrediccionesModule,
   ],
   controllers: [AlertasController, ReglasController],

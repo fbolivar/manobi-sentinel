@@ -2,11 +2,37 @@ import {
   Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { IsDateString, IsIn, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { AlertasService } from './alertas.service';
 import { CerrarAlertaDto, CreateAlertaDto } from './dto/alerta.dto';
+
+const NIVELES = ['verde', 'amarillo', 'rojo'] as const;
+const ESTADOS = ['activa', 'cerrada', 'resuelta'] as const;
+
+class AlertasQueryDto {
+  @IsOptional() @IsUUID() parque_id?: string;
+  @IsOptional() @IsIn(NIVELES) nivel?: string;
+}
+
+class HistoricoQueryDto {
+  @IsOptional() @IsInt() @Min(1) @Max(1000) @Type(() => Number) limit?: number;
+  @IsOptional() @IsUUID() parque_id?: string;
+  @IsOptional() @IsIn(NIVELES) nivel?: string;
+  @IsOptional() @IsIn(ESTADOS) estado?: string;
+  @IsOptional() @IsDateString() desde?: string;
+  @IsOptional() @IsDateString() hasta?: string;
+}
+
+class StatsQueryDto {
+  @IsOptional() @IsUUID() parque_id?: string;
+  @IsOptional() @IsIn(NIVELES) nivel?: string;
+  @IsOptional() @IsDateString() desde?: string;
+  @IsOptional() @IsDateString() hasta?: string;
+}
 
 @ApiTags('alertas')
 @ApiBearerAuth()
@@ -16,33 +42,21 @@ export class AlertasController {
   constructor(private readonly svc: AlertasService) {}
 
   @Get()
-  activas(@Query('parque_id') parqueId?: string, @Query('nivel') nivel?: string) {
-    return this.svc.findActivas(parqueId, nivel);
+  activas(@Query() q: AlertasQueryDto) {
+    return this.svc.findActivas(q.parque_id, q.nivel);
   }
 
   @Get('historico')
-  historico(
-    @Query('limit') limit?: string,
-    @Query('parque_id') parqueId?: string,
-    @Query('nivel') nivel?: string,
-    @Query('estado') estado?: string,
-    @Query('desde') desde?: string,
-    @Query('hasta') hasta?: string,
-  ) {
+  historico(@Query() q: HistoricoQueryDto) {
     return this.svc.findHistorico({
-      limit: limit ? Number(limit) : 200,
-      parqueId, nivel, estado, desde, hasta,
+      limit: q.limit ?? 200,
+      parqueId: q.parque_id, nivel: q.nivel, estado: q.estado, desde: q.desde, hasta: q.hasta,
     });
   }
 
   @Get('historico/stats')
-  historicoStats(
-    @Query('parque_id') parqueId?: string,
-    @Query('nivel') nivel?: string,
-    @Query('desde') desde?: string,
-    @Query('hasta') hasta?: string,
-  ) {
-    return this.svc.historicoStats({ parqueId, nivel, desde, hasta });
+  historicoStats(@Query() q: StatsQueryDto) {
+    return this.svc.historicoStats({ parqueId: q.parque_id, nivel: q.nivel, desde: q.desde, hasta: q.hasta });
   }
 
   @Get('summary')
